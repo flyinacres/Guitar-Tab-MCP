@@ -516,7 +516,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
             fret = str(fret_info["fret"])
             line_index = string_num - 1
             
-            string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret)
+            replace_chars_at_position(string_lines[line_index], char_position, fret)
             max_fret_width = max(max_fret_width, len(fret))
         
         # Warn about chords with wide fret numbers
@@ -541,7 +541,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         
         # Compact format: "3h5" or "10p12"
         technique_str = f"{from_fret}{symbol}{to_fret}"
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
+        replace_chars_at_position(string_lines[line_index], char_position, technique_str)
         
         # Warn about wide technique notations
         if len(technique_str) > 3:
@@ -565,7 +565,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         
         # Compact format: "3/5" or "12\8"  
         technique_str = f"{from_fret}{symbol}{to_fret}"
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
+        replace_chars_at_position(string_lines[line_index], char_position, technique_str)
         
         if len(technique_str) > 3:
             warnings.append({
@@ -587,7 +587,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         
         # Compact format: "3b" or "5r"
         technique_str = f"{fret}{symbol}"
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
+        replace_chars_at_position(string_lines[line_index], char_position, technique_str)
     
     return warnings
 
