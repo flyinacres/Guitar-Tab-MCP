@@ -76,6 +76,21 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
     - Detects event conflicts (multiple notes on same string/beat)
     - Tracks attempt count to prevent infinite LLM regeneration loops
     - Provides warnings for formatting issues (multi-digit frets, etc.)
+
+    JSON Structure:
+    {
+      "title": "string",
+      "timeSignature": "4/4|3/4|6/8", 
+      "measures": [{"events": [...]}]
+    }
+                                      
+    Event types:
+    - note: {"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24}
+    - chord: {"type": "chord", "beat": 1.0-4.5, "frets": [{"string": 1-6, "fret": 0-24}]}
+    - hammerOn: {"type": "hammerOn", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}
+    - pullOff: {"type": "pullOff", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}  
+    - slide: {"type": "slide", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24, "direction": "up|down"}
+    - bend: {"type": "bend", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "bendType": "bend|release", "semitones": 0.5-2.0}
     """
     logger.info(f"Received data type: {type(tab_data)}")
     logger.info(f"Received data: {tab_data}")

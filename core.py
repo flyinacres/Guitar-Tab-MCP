@@ -420,7 +420,7 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
     Generate tab section for up to 4 measures.
     
     The template system is designed to be flexible for different content:
-    - Standard measures get 16 characters (15 dashes + 1 separator)
+    - Standard measures get 18 characters (17 dashes + 1 separator)
     - Multi-digit frets may require expanding this template
     - Beat markers align exactly with note positions
     
@@ -432,7 +432,8 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
     
     # Create beat markers - this depends on time signature
     # For now, assume 4/4 time signature
-    beat_line = " 1 & 2 & 3 & 4 & " * num_measures
+    beat_line = " 1 & 2 & 3 & 4 &  " * num_measures
+    beat_line = " " + beat_line
     
     # Initialize string lines with template dashes
     # 6 strings (high e to low E), each with dashes and measure separators
@@ -440,7 +441,7 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
     for string_idx in range(6):
         line = ""
         for measure_idx in range(num_measures):
-            line += "|" + "-" * 15  # 15 dashes per measure
+            line += "|" + "-" * 17  # 17 dashes per measure
         line += "|"  # Final separator
         string_lines.append(line)
     
@@ -603,20 +604,20 @@ def calculate_char_position(beat: float, measure_offset: int) -> int:
     the beat marker positions in the header line.
     
     For 4/4 time signature:
-    - Each measure uses 16 characters (15 content + 1 separator)
+    - Each measure uses 18 characters (17 content + 1 separator)
     - Beat positions are: 1.0->1, 1.5->3, 2.0->5, etc.
-    - Measure offset shifts the base position by measure_offset * 16
+    - Measure offset shifts the base position by measure_offset * 18
     """
     # Beat to character position mapping for 4/4 time
     beat_map = {
-        1.0: 1, 1.5: 3, 2.0: 5, 2.5: 7,
-        3.0: 9, 3.5: 11, 4.0: 13, 4.5: 15
+        1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8,
+        3.0: 10, 3.5: 12, 4.0: 14, 4.5: 16
     }
     
     base_position = beat_map.get(beat, 1)
     
-    # Each measure takes 16 characters in the template
-    return base_position + (measure_offset * 16)
+    # Each measure takes 18 characters in the template
+    return base_position + (measure_offset * 18)
 
 def replace_chars_at_position(line: str, position: int, replacement: str) -> str:
     """
