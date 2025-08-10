@@ -28,6 +28,7 @@ For Claude Desktop integration, add to config:
 
 import sys
 import logging
+import json
 from typing import Dict, Any
 from fastmcp import FastMCP
 from pydantic import BaseModel
@@ -55,7 +56,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("Guitar Tab Generator")
 
 @mcp.tool()
-def generate_guitar_tab(tab_data: TabRequest) -> TabResponse:
+def generate_guitar_tab(tab_data: str) -> TabResponse:
     """
     Generate ASCII guitar tablature from structured JSON input.
     
@@ -76,13 +77,58 @@ def generate_guitar_tab(tab_data: TabRequest) -> TabResponse:
     - Tracks attempt count to prevent infinite LLM regeneration loops
     - Provides warnings for formatting issues (multi-digit frets, etc.)
     """
-    logger.info(f"Processing tab generation request: '{tab_data.title}' (attempt {tab_data.attempt})")
+    logger.info(f"Received data type: {type(tab_data)}")
+    logger.info(f"Received data: {tab_data}")
     
     try:
+        # Manually create TabRequest from dict
+        data_dict = json.loads(tab_data)
+        logger.info(f"Parsed data: {data_dict}")
+        request = TabRequest(**data_dict)
+        logger.info(f"Processing tab generation request: (attempt {request.attempt})")
+                                
         # Check attempt limit first to prevent infinite loops
-        attempt_error = check_attempt_limit(tab_data.attempt)
+        attempt_error = check_attempt_limit(request.attempt)
         if attempt_error:
-            logger.warning(f"Attempt limit exceeded: {tab_data.attempt}")
+            logger.warning(f"Attempt limit exceeded: {request.attempt}")
             return TabResponse(success=False, error=attempt_error)
         
-        # Convert Pydantic model to dict for
+        # Validate input
+        validation_result = validate_tab_data(data_dict)
+        if validation_result["isError"]:
+            logger.warning(f"Validation failed: {validation_result['message']}")
+            return TabResponse(success=False, error=validation_result)
+                                            
+        # Generate tab with warnings
+        tab_output, warnings = generate_tab_output(data_dict)
+                                                  
+        return TabResponse(success=True, content=tab_output, warnings=warnings)
+    
+    except Exception as e:
+        logger.error(f"Unexpected error during tab generation: {e}")
+        return TabResponse(
+            success=False, 
+            error={
+                "isError": True,
+                "errorType": "processing_error",
+                "message": f"Unexpected error during tab generation: {str(e)}",
+                "suggestion": "Check input format and try again"
+            }
+        )
+
+# ============================================================================
+# MCP Server Startup
+# ============================================================================
+
+def main():
+    """
+    Start the MCP server.
+
+    This runs the FastMCP server in stdio mode for integration with
+    Claude Desktop and other MCP clients.
+    """
+    logger.info("Starting Guitar Tab Generator MCP Server")
+    mcp.run()
+
+if __name__ == "__main__":
+    main()

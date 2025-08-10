@@ -580,7 +580,10 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         string_num = event["string"]
         beat = event["beat"]
         fret = str(event["fret"])
-        symbol = event["symbol"]  # 'b' or 'r'
+        # symbol = event["symbol"]  # 'b' or 'r'
+        # Generate symbol based on bendType
+        bend_type = event.get("bendType", "bend")
+        symbol = "b" if bend_type == "bend" else "r"
         
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1

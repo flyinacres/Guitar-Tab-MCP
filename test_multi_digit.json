@@ -1,0 +1,12 @@
+{
+	  "title": "Multi-Digit Frets Test", 
+	    "timeSignature": "4/4",
+	      "measures": [
+		          {
+				        "events": [
+						        {"type": "note", "string": 1, "beat": 1.0, "fret": 12},
+							        {"type": "note", "string": 2, "beat": 2.0, "fret": 10}
+								      ]
+								          }
+									    ]
+}
