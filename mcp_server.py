@@ -71,7 +71,7 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
         TabResponse with generated tab content or structured error information
         
     Key Features:
-    - Supports notes, chords, hammer-ons, pull-offs, slides, and bends
+    - Supports notes, chords, hammer-ons, pull-offs, slides, and bends (with semitone amounts)
     - Validates timing against time signature constraints
     - Detects event conflicts (multiple notes on same string/beat)
     - Tracks attempt count to prevent infinite LLM regeneration loops
@@ -90,7 +90,12 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
     - hammerOn: {"type": "hammerOn", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}
     - pullOff: {"type": "pullOff", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}  
     - slide: {"type": "slide", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24, "direction": "up|down"}
-    - bend: {"type": "bend", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "bendType": "bend|release", "semitones": 0.5-2.0}
+    - bend: {"type": "bend", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "bendType": "bend|release", "semitones": 0.5-3.0}
+    Bend notation examples:
+    - 7b1 = bend 7th fret up 1 semitone (half step)
+    - 8b2 = bend 8th fret up 2 semitones (whole step) 
+    - 9r1.5 = release bend at 9th fret down 1.5 semitones
+    - 12b0.5 = quarter-tone bend at 12th fret
     """
     logger.info(f"Received data type: {type(tab_data)}")
     logger.info(f"Received data: {tab_data}")

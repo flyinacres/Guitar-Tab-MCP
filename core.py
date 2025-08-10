@@ -362,7 +362,31 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
                 "message": f"Pull-off fromFret ({from_fret}) must be higher than toFret ({to_fret})",
                 "suggestion": "Pull-offs go to lower frets - check fromFret and toFret values"
             }
-    
+    # Add bend-specific validation
+    elif event_type == "bend":
+        semitones = event.get("semitones")
+        if semitones is not None:
+            if not isinstance(semitones, (int, float)) or semitones <= 0 or semitones > 3.0:
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "measure": measure_idx,
+                    "beat": beat,
+                    "message": f"Invalid semitones value: {semitones}",
+                    "suggestion": "Semitones must be a number between 0.5 and 3.0 (0.5=quarter step, 1.0=half step, 2.0=whole step)"
+                }
+        
+        bend_type = event.get("bendType")
+        if bend_type and bend_type not in ["bend", "release"]:
+            return {
+                "isError": True,
+                "errorType": "validation_error",
+                "measure": measure_idx,
+                "beat": beat,
+                "message": f"Invalid bendType: {bendType}",
+                "suggestion": "bendType must be either 'bend' or 'release'"
+            } 
+
     return {"isError": False}
 
 # ============================================================================
@@ -576,22 +600,43 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
                 "message": f"Slide notation '{technique_str}' may require template adjustment",
                 "suggestion": f"Slide uses {len(technique_str)} character positions"
             })
-    
+
     elif event_type == "bend":
         string_num = event["string"]
         beat = event["beat"]
         fret = str(event["fret"])
-        # symbol = event["symbol"]  # 'b' or 'r'
-        # Generate symbol based on bendType
         bend_type = event.get("bendType", "bend")
-        symbol = "b" if bend_type == "bend" else "r"
-        
+        semitones = event.get("semitones", 1.0)
+    
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1
-        
-        # Compact format: "3b" or "5r"
-        technique_str = f"{fret}{symbol}"
+    
+        # Generate enhanced notation with semitone amount
+        if bend_type == "bend":
+            # Format semitones nicely - remove .0 for whole numbers
+            if semitones == int(semitones):
+                semitone_str = str(int(semitones))
+            else:
+                semitone_str = str(semitones)
+            technique_str = f"{fret}b{semitone_str}"
+        else:  # release
+            if semitones == int(semitones):
+                semitone_str = str(int(semitones))
+            else:
+                semitone_str = str(semitones)
+            technique_str = f"{fret}r{semitone_str}"
+    
         string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
+    
+        # Add warning for wide bend notations
+        if len(technique_str) > 2:
+            warnings.append({
+                "warningType": "formatting_warning",
+                "measure": measure_number,
+                "beat": beat,
+                "message": f"Bend notation '{technique_str}' may require template adjustment",
+                "suggestion": f"Bend notation uses {len(technique_str)} character positions"
+            }) 
     
     return warnings
 
