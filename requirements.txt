@@ -1,0 +1,4 @@
+# requirements.txt
+fastmcp>=0.9.0
+pydantic>=2.0.0
+typing-extensions>=4.0.0  # For older Python versions
