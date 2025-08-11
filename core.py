@@ -19,6 +19,17 @@ import json
 import logging
 from typing import Dict, List, Any, Tuple, Optional
 from pydantic import BaseModel, Field, validator
+from time_signatures import (
+    get_time_signature_config,
+    is_beat_valid,
+    calculate_char_position,
+    generate_beat_markers,
+    create_beat_validation_error,
+    create_time_signature_error,
+    get_supported_time_signatures,
+    get_content_width,
+    calculate_total_width
+)
 
 # Configure logging to stderr only (stdout reserved for MCP protocol)
 logging.basicConfig(
@@ -42,7 +53,7 @@ class TabRequest(BaseModel):
     """
     title: str
     description: str = ""
-    timeSignature: str = Field(default="4/4", pattern=r"^(4/4|3/4|6/8)$")
+    timeSignature: str = Field(default="4/4", pattern=r"^(4/4|3/4|6/8|2/4)$")
     tempo: int = Field(default=120, ge=40, le=300)
     attempt: int = Field(default=1, ge=1, le=10)
     measures: List[Dict[str, Any]]
@@ -152,33 +163,19 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
 
 def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Validate beat timing values against time signature constraints.
-    
-    Different time signatures have different valid beat subdivisions.
-    We're strict about this because incorrect timing makes tabs unplayable.
-    The beat validation is the most common error source from LLMs.
+    Enhanced timing validation using time signature module.
     """
     time_sig = data.get("timeSignature", "4/4")
     
-    # Define valid beat positions for each time signature
-    if time_sig == "4/4":
-        valid_beats = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-    elif time_sig == "3/4":
-        valid_beats = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
-    elif time_sig == "6/8":
-        valid_beats = [1.0, 1.33, 1.67, 2.0, 2.33, 2.67]  # Compound time
-    else:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "message": f"Unsupported time signature: {time_sig}",
-            "suggestion": "Use supported time signatures: 4/4, 3/4, or 6/8"
-        }
+    # Check if time signature is supported
+    try:
+        get_time_signature_config(time_sig)
+    except ValueError:
+        return create_time_signature_error(time_sig)
     
     # Check every event's beat timing
     for measure_idx, measure in enumerate(data["measures"], 1):
         for event_idx, event in enumerate(measure.get("events", []), 1):
-            # Extract beat from various event types (some use 'beat', others 'startBeat')
             beat = event.get("beat") or event.get("startBeat")
             
             if beat is None:
@@ -190,15 +187,8 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
                     "suggestion": "Add 'beat' or 'startBeat' field to event"
                 }
             
-            if beat not in valid_beats:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "measure": measure_idx,
-                    "beat": beat,
-                    "message": f"Beat {beat} invalid for {time_sig} time signature",
-                    "suggestion": f"Use valid beat values: {', '.join(map(str, valid_beats))}"
-                }
+            if not is_beat_valid(beat, time_sig):
+                return create_beat_validation_error(beat, time_sig, measure_idx)
     
     return {"isError": False}
 
@@ -445,7 +435,7 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
     # Process measures in groups of 4 for formatting
     for measure_group_start in range(0, len(measures), 4):
         measure_group = measures[measure_group_start:measure_group_start + 4]
-        tab_section, section_warnings = generate_measure_group(measure_group, measure_group_start)
+        tab_section, section_warnings = generate_measure_group(measure_group, measure_group_start, time_sig)
         warnings.extend(section_warnings)
         output_lines.extend(tab_section)
         output_lines.append("")  # Space between groups
@@ -457,7 +447,7 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
 # Annotation System Functions
 # ============================================================================
 
-def process_annotations(measures: List[Dict[str, Any]], num_measures: int) -> Tuple[str, str]:
+def process_annotations(measures: List[Dict[str, Any]], num_measures: int, time_signature: str = "4/4") -> Tuple[str, str]:
     """
     Process chord names and annotations (palm mutes, chucks) for display above tab.
     
@@ -495,7 +485,7 @@ def process_annotations(measures: List[Dict[str, Any]], num_measures: int) -> Tu
             if beat is None:
                 continue
                 
-            char_position = calculate_char_position(beat, measure_idx)
+            char_position = calculate_char_position(beat, measure_idx, time_signature)
             
             # Process chord names
             if event_type == "chord" and "chordName" in event:
@@ -573,7 +563,7 @@ def generate_palm_mute_notation(duration: float) -> str:
     return "PM" + "-" * num_dashes
 
 
-def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> Tuple[List[str], List[Dict[str, Any]]]:
+def generate_measure_group(measures: List[Dict[str, Any]], start_index: int, time_signature: str = "4/4") -> Tuple[List[str], List[Dict[str, Any]]]:
     """
     Generate tab section for up to 4 measures with enhanced annotation support.
     
@@ -613,24 +603,24 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
     num_measures = len(measures)
     
     # Process annotations (chord names, palm mutes, chucks)
-    chord_line, annotation_line = process_annotations(measures, num_measures)
+    chord_line, annotation_line = process_annotations(measures, num_measures, time_signature)
     
-    # Create beat markers
-    beat_line = " 1 & 2 & 3 & 4 &  " * num_measures
+    # Generate beat markers using time signature module  
+    beat_line = generate_beat_markers(time_signature, num_measures)
     beat_line = " " + beat_line
     
     # Initialize string lines with template dashes
     string_lines = []
+    content_width = get_content_width(time_signature)
     for string_idx in range(6):
-        line = ""
+        line = "|"
         for measure_idx in range(num_measures):
-            line += "|" + "-" * 17  # 17 dashes per measure
-        line += "|"  # Final separator
+            line += "-" * content_width + "|"
         string_lines.append(line)
     
     # Place events on appropriate string lines
     for measure_idx, measure in enumerate(measures):
-        measure_warnings = place_measure_events(measure, string_lines, measure_idx, start_index + measure_idx + 1)
+        measure_warnings = place_measure_events(measure, string_lines, measure_idx, start_index + measure_idx + 1, time_signature)
         warnings.extend(measure_warnings)
     
     # Combine all lines: annotations + beat markers + string lines
@@ -651,7 +641,7 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
     return result, warnings
 
 
-def place_measure_events(measure: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int) -> List[Dict[str, Any]]:
+def place_measure_events(measure: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int, time_signature: str = "4/4") -> List[Dict[str, Any]]:
     """
     Place all events from one measure onto the tab lines.
     
@@ -749,7 +739,7 @@ def format_semitone_string(semitones: float) -> str:
     else:
         return str(semitones)
 
-def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int) -> List[Dict[str, Any]]:
+def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int, time_signature: str = "4/4") -> List[Dict[str, Any]]:
     """
     Place individual event on the appropriate tab line.
     
@@ -769,7 +759,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         fret = event["fret"]
         vibrato = event.get("vibrato", False)
 
-        char_position = calculate_char_position(beat, measure_offset)
+        char_position = calculate_char_position(beat, measure_offset, time_signature)
         line_index = string_num - 1  # Convert 1-indexed to 0-indexed
 
         # Handle muted strings and vibrato
@@ -796,7 +786,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
     
     elif event_type == "chord":
         beat = event["beat"]
-        char_position = calculate_char_position(beat, measure_offset)
+        char_position = calculate_char_position(beat, measure_offset, time_signature)
         
         max_fret_width = 0
         for fret_info in event["frets"]:
@@ -825,7 +815,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         symbol = "h" if event_type == "hammerOn" else "p"
         vibrato = event.get("vibrato", False)
 
-        char_position = calculate_char_position(beat, measure_offset)
+        char_position = calculate_char_position(beat, measure_offset, time_signature)
         line_index = string_num - 1
         
         # Compact format: "3h5" or "10p12"
@@ -855,7 +845,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         symbol = "/" if event["direction"] == "up" else "\\"
         vibrato = event.get("vibrato", False)
 
-        char_position = calculate_char_position(beat, measure_offset)
+        char_position = calculate_char_position(beat, measure_offset, time_signature)
         line_index = string_num - 1
         
         # Compact format: "3/5" or "12\8"  
@@ -883,7 +873,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         semitones = event.get("semitones", 1.0)
         vibrato = event.get("vibrato", False)
     
-        char_position = calculate_char_position(beat, measure_offset)
+        char_position = calculate_char_position(beat, measure_offset, time_signature)
         line_index = string_num - 1
     
         # Handle muted strings in bends (unusual but possible)
@@ -913,29 +903,6 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
                 }) 
     return warnings
 
-def calculate_char_position(beat: float, measure_offset: int) -> int:
-    """
-    Calculate exact character position for a given beat within the template.
-    
-    This is critical for proper alignment - any error here results in
-    notes appearing at wrong times. The mapping must exactly match
-    the beat marker positions in the header line.
-    
-    For 4/4 time signature:
-    - Each measure uses 18 characters (17 content + 1 separator)
-    - Beat positions are: 1.0->1, 1.5->3, 2.0->5, etc.
-    - Measure offset shifts the base position by measure_offset * 18
-    """
-    # Beat to character position mapping for 4/4 time
-    beat_map = {
-        1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8,
-        3.0: 10, 3.5: 12, 4.0: 14, 4.5: 16
-    }
-    
-    base_position = beat_map.get(beat, 1)
-    
-    # Each measure takes 18 characters in the template
-    return base_position + (measure_offset * 18)
 
 def replace_chars_at_position(line: str, position: int, replacement: str) -> str:
     """
