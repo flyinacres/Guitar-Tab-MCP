@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Guitar Tab Generator - Core Implementation
 ==========================================
@@ -301,13 +301,25 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
 
 def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: float) -> Dict[str, Any]:
     """
-    Validate technique-specific rules that ensure playability.
+    Validate technique-specific rules that ensure playability and proper notation.
     
-    Each guitar technique has physical constraints:
+    Each guitar technique has physical constraints and notation rules:
     - Hammer-ons must go to higher fret (you can't hammer down)
     - Pull-offs must go to lower fret  
-    - String numbers must be 1-6
-    - Fret numbers must be 0-24 (practical guitar range)
+    - String numbers must be 1-6 (1=high e, 6=low E)
+    - Fret numbers must be 0-24 or "x" for muted strings
+    - Bend semitones must be 0.5-3.0 (quarter-step to step-and-a-half)
+    - Palm mute duration must be positive and reasonable (0.5-8.0 beats)
+    - Chuck events only need string and beat (no fret required)
+    
+    Special fret values:
+    - "x" or "X" = muted/dead string (produces no pitch)
+    - 0 = open string (no finger pressure needed)
+    - 1-24 = fretted notes (standard guitar range)
+    
+    Annotation events:
+    - palmMute: Requires beat and duration, no string/fret
+    - chuck: Requires only beat, no string/fret (affects all strings)
     """
     event_type = event.get("type")
     
@@ -323,19 +335,32 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
             "suggestion": "String numbers must be 1-6 (1=high e, 6=low E)"
         }
     
-    # Validate fret ranges
+    # Validate fret ranges (now supports "x" for muted strings)
     for fret_field in ["fret", "fromFret", "toFret"]:
         fret = event.get(fret_field)
-        if fret is not None and (fret < 0 or fret > 24):
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "measure": measure_idx,
-                "beat": beat,
-                "message": f"Invalid fret number: {fret}",
-                "suggestion": "Fret numbers must be 0-24"
-            }
-    
+        if fret is not None:
+            # Allow "x" or "X" for muted strings
+            if isinstance(fret, str) and fret.lower() == "x":
+                continue  # Valid muted string
+            elif isinstance(fret, (int, float)) and (fret < 0 or fret > 24):
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "measure": measure_idx,
+                    "beat": beat,
+                    "message": f"Invalid fret number: {fret}",
+                    "suggestion": "Fret numbers must be 0-24 or 'x' for muted strings"
+                }
+            elif not isinstance(fret, (int, float, str)):
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "measure": measure_idx,
+                    "beat": beat,
+                    "message": f"Invalid fret value: {fret}",
+                    "suggestion": "Fret must be a number (0-24) or 'x' for muted strings"
+                }
+             
     # Technique-specific validations
     if event_type == "hammerOn":
         from_fret = event.get("fromFret")
@@ -373,20 +398,9 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
                     "measure": measure_idx,
                     "beat": beat,
                     "message": f"Invalid semitones value: {semitones}",
-                    "suggestion": "Semitones must be a number between 0.5 and 3.0 (0.5=quarter step, 1.0=half step, 2.0=whole step)"
+                    "suggestion": "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)" 
                 }
         
-        bend_type = event.get("bendType")
-        if bend_type and bend_type not in ["bend", "release"]:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "measure": measure_idx,
-                "beat": beat,
-                "message": f"Invalid bendType: {bendType}",
-                "suggestion": "bendType must be either 'bend' or 'release'"
-            } 
-
     return {"isError": False}
 
 # ============================================================================
@@ -439,28 +453,173 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
     logger.info(f"Generated tab with {len(warnings)} warnings")
     return "\n".join(output_lines), warnings
 
+# ============================================================================
+# Annotation System Functions
+# ============================================================================
+
+def process_annotations(measures: List[Dict[str, Any]], num_measures: int) -> Tuple[str, str]:
+    """
+    Process chord names and annotations (palm mutes, chucks) for display above tab.
+    
+    This function creates two annotation lines that appear above the beat markers:
+    1. Chord line: Shows chord names (e.g., "G", "Em", "C") above chord events
+    2. Annotation line: Shows palm mutes (PM---), chucks (X), and other techniques
+    
+    The positioning system ensures annotations align exactly with their corresponding
+    musical events using the same character position calculations as the tab content.
+    
+    Args:
+        measures: List of measure objects containing events
+        num_measures: Number of measures to process (typically 1-4 per group)
+        
+    Returns:
+        Tuple of (chord_line, annotation_line) - two formatted strings ready for display
+        
+    Example output:
+        annotation_line: " PM------------ X    PM---"
+        chord_line:      " G              Em        "
+    """
+    # Calculate total character width (18 chars per measure + leading space)
+    total_width = 1 + (num_measures * 18)
+    
+    # Initialize annotation arrays
+    chord_chars = [' '] * total_width
+    annotation_chars = [' '] * total_width
+    
+    # Process each measure
+    for measure_idx, measure in enumerate(measures):
+        for event in measure.get("events", []):
+            event_type = event.get("type")
+            beat = event.get("beat") or event.get("startBeat")
+            
+            if beat is None:
+                continue
+                
+            char_position = calculate_char_position(beat, measure_idx)
+            
+            # Process chord names
+            if event_type == "chord" and "chordName" in event:
+                chord_name = event["chordName"]
+                place_annotation_text(chord_chars, char_position, chord_name, total_width)
+            
+            # Process palm mutes
+            elif event_type == "palmMute":
+                duration = event.get("duration", 1.0)
+                pm_text = generate_palm_mute_notation(duration)
+                place_annotation_text(annotation_chars, char_position, pm_text, total_width)
+            
+            # Process chucks
+            elif event_type == "chuck":
+                place_annotation_text(annotation_chars, char_position, "X", total_width)
+    
+    # Convert character arrays to strings with labels
+    chord_line = "".join(chord_chars).rstrip()
+    annotation_line = "".join(annotation_chars).rstrip()
+    
+    return chord_line, annotation_line
+
+def place_annotation_text(char_array: List[str], position: int, text: str, max_width: int):
+    """
+    Place annotation text at specified position, avoiding overwrites.
+    
+    This is a utility function for positioning text within the annotation lines.
+    It ensures that:
+    - Text doesn't extend beyond the line boundaries
+    - Existing text isn't overwritten (first-come, first-served basis)
+    - Annotations align with their corresponding musical events
+    
+    Args:
+        char_array: Mutable list of characters representing the annotation line
+        position: Starting character position (calculated using calculate_char_position)
+        text: Text to place (e.g., "G", "PM---", "X")
+        max_width: Maximum line width to prevent array bounds errors
+        
+    Side Effects:
+        Modifies char_array in place by setting characters at specified positions
+    """
+    for i, char in enumerate(text):
+        target_pos = position + i
+        if target_pos < max_width and target_pos >= 0:
+            # Only place if the position is empty (space) to avoid overwrites
+            if char_array[target_pos] == ' ':
+                char_array[target_pos] = char
+
+def generate_palm_mute_notation(duration: float) -> str:
+    """
+    Generate palm mute notation with appropriate number of dashes.
+    
+    Palm mutes are displayed as "PM" followed by dashes that indicate the
+    duration of the muting effect. This provides visual feedback about
+    how long to maintain the palm mute technique.
+    
+    The dash calculation uses approximately 2 characters per beat to provide
+    reasonable visual representation within the ASCII tab format constraints.
+    
+    Args:
+        duration: Duration in beats (e.g., 2.0 = 2 beats, 1.5 = beat and a half)
+        
+    Returns:
+        String like "PM-" (short), "PM----" (medium), or "PM---------" (long)
+        
+    Examples:
+        duration=0.5 ? "PM-"
+        duration=1.0 ? "PM--" 
+        duration=2.0 ? "PM----"
+        duration=3.5 ? "PM-------"
+    """
+    # Calculate number of dashes based on duration
+    # Each beat gets approximately 2 characters worth of dashes
+    num_dashes = max(1, int(duration * 2))
+    return "PM" + "-" * num_dashes
+
+
 def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
-    Generate tab section for up to 4 measures.
+    Generate tab section for up to 4 measures with enhanced annotation support.
     
-    The template system is designed to be flexible for different content:
-    - Standard measures get 18 characters (17 dashes + 1 separator)
-    - Multi-digit frets may require expanding this template
-    - Beat markers align exactly with note positions
+    This is the core tab generation function that orchestrates the creation of
+    a complete tab section including chord names, technique annotations, beat
+    markers, and the actual tablature lines.
     
-    This is where the rubber meets the road for tab alignment - any bugs
-    here will result in misaligned output that's unusable.
+    The function now supports a three-tier display system:
+    1. Chord names (when provided in chord events)
+    2. Technique annotations (palm mutes, chucks, etc.)
+    3. Standard tab content (beat markers + 6 string lines)
+    
+    Key enhancements over the basic version:
+    - Processes annotation events (palmMute, chuck) for display above tab
+    - Extracts chord names from chord events for chord line display
+    - Only shows annotation lines when they contain actual content
+    - Maintains backward compatibility with existing tab generation
+    
+    Args:
+        measures: List of measure dictionaries containing events
+        start_index: Starting measure number for this group (used in warnings)
+        
+    Returns:
+        Tuple of (output_lines, warnings):
+        - output_lines: List of strings forming the complete tab section
+        - warnings: List of formatting warnings for complex notations
+        
+    Example output structure:
+        [" PM------------ X    PM---",
+         " G              Em        ",
+         " 1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &",
+         "|-3---x---0-------|0---x---0---3---|",
+         ... (remaining 5 string lines)
+        ]
     """
     warnings = []
     num_measures = len(measures)
     
-    # Create beat markers - this depends on time signature
-    # For now, assume 4/4 time signature
+    # Process annotations (chord names, palm mutes, chucks)
+    chord_line, annotation_line = process_annotations(measures, num_measures)
+    
+    # Create beat markers
     beat_line = " 1 & 2 & 3 & 4 &  " * num_measures
     beat_line = " " + beat_line
     
     # Initialize string lines with template dashes
-    # 6 strings (high e to low E), each with dashes and measure separators
     string_lines = []
     for string_idx in range(6):
         line = ""
@@ -474,27 +633,121 @@ def generate_measure_group(measures: List[Dict[str, Any]], start_index: int) -> 
         measure_warnings = place_measure_events(measure, string_lines, measure_idx, start_index + measure_idx + 1)
         warnings.extend(measure_warnings)
     
-    # Combine beat markers with string lines
-    result = [beat_line]
+    # Combine all lines: annotations + beat markers + string lines
+    result = []
+    
+    # Only add annotation lines if they contain non-space content beyond the label
+    chord_content = chord_line.strip()
+    annotation_content = annotation_line.strip()
+    
+    if chord_content:
+        result.append(chord_line)
+    if annotation_content:
+        result.append(annotation_line)
+    
+    result.append(beat_line)
     result.extend(string_lines)
     
     return result, warnings
+
 
 def place_measure_events(measure: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int) -> List[Dict[str, Any]]:
     """
     Place all events from one measure onto the tab lines.
     
-    This function handles the complex logic of converting abstract
-    musical events into precise character positions in the ASCII tab.
-    Each event type has different placement rules and character requirements.
+    Enhanced version that properly handles the separation between musical events
+    (which appear on the string lines) and annotation events (which appear above
+    the tab in the chord/annotation lines).
+    
+    This function now filters out annotation-only events (palmMute, chuck) and
+    delegates their processing to the annotation system, preventing them from
+    being incorrectly placed on string lines.
+    
+    The separation ensures clean code organization and proper visual layout:
+    - Musical events ? String lines (handled here)
+    - Annotation events ? Annotation lines (handled by process_annotations)
+    
+    This function handles the complex logic of converting abstract musical
+    events into precise character positions in the ASCII tab. Each event type
+    has different placement rules and character requirements.
+    
+    Args:
+        measure: Single measure dictionary containing events list
+        string_lines: Mutable list of 6 strings representing guitar tab lines
+        measure_offset: Position of this measure within the current group (0-3)
+        measure_number: Absolute measure number for error reporting (1-based)
+        
+    Returns:
+        List of warning dictionaries for formatting issues (multi-digit frets, etc.)
+        
+    Side Effects:
+        Modifies string_lines in place by placing event notation at calculated positions
     """
     warnings = []
     
     for event in measure.get("events", []):
+        # Skip annotation events - they're handled separately
+        if event.get("type") in ["palmMute", "chuck"]:
+            continue
+            
         event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number)
         warnings.extend(event_warnings)
     
     return warnings
+
+
+def format_semitone_string(semitones: float) -> str:
+    """
+    Convert semitone float to clean notation using Unicode fractions.
+    
+    This function creates more compact and visually appealing bend notation
+    by using Unicode fraction symbols instead of decimal representations.
+    This matches traditional guitar tablature conventions where fractions
+    are commonly used for bend amounts.
+    
+    Args:
+        semitones: Numeric semitone value (0.5, 1.0, 1.5, 2.0, etc.)
+        
+    Returns:
+        String representation using Unicode fractions where appropriate
+        
+    Examples:
+        0.25 ? "¼"
+        0.5  ? "½" 
+        0.75 ? "¾"
+        1.0  ? "1"
+        1.5  ? "1½"
+        2.0  ? "2"
+        2.5  ? "2½"
+        1.33 ? "1.33" (fallback for non-standard values)
+    """
+    # Handle common fraction cases with Unicode symbols
+    if semitones == 0.25:
+        return "¼"
+    elif semitones == 0.5:
+        return "½"
+    elif semitones == 0.75:
+        return "¾"
+    elif semitones == 1.25:
+        return "1¼"
+    elif semitones == 1.5:
+        return "1½"
+    elif semitones == 1.75:
+        return "1¾"
+    elif semitones == 2.25:
+        return "2¼"
+    elif semitones == 2.5:
+        return "2½"
+    elif semitones == 2.75:
+        return "2¾"
+    elif semitones == 3.0:
+        return "3"
+    # Handle whole numbers (remove .0)
+    elif semitones == int(semitones):
+        return str(int(semitones))
+    # Fallback for unusual decimal values
+    else:
+        return str(semitones)
 
 def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int) -> List[Dict[str, Any]]:
     """
@@ -513,22 +766,32 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
     if event_type == "note":
         string_num = event["string"]
         beat = event["beat"]
-        fret = str(event["fret"])
-        
+        fret = event["fret"]
+        vibrato = event.get("vibrato", False)
+
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1  # Convert 1-indexed to 0-indexed
+
+        # Handle muted strings and vibrato
+        if isinstance(fret, str) and fret.lower() == "x":
+            fret_str = "x"
+        else:
+            fret_str = str(fret)
+            if vibrato:
+                fret_str += "~"
+ 
         print(f"DEBUG: Placing fret {fret} at position {char_position} on string {string_num}", file=sys.stderr) 
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret)
+        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret_str)
         print(f"DEBUG: Line after: {string_lines[line_index]}", file=sys.stderr)
         
-        # Warn about multi-digit frets that may cause alignment issues
-        if len(fret) > 1:
+        # Warn about multi-digit frets or vibrato that may cause alignment issues
+        if len(fret_str) > 1:
             warnings.append({
                 "warningType": "formatting_warning",
                 "measure": measure_number,
                 "beat": beat,
-                "message": f"Multi-digit fret ({fret}) may affect template alignment",
-                "suggestion": f"Fret {fret} uses {len(fret)} character positions"
+                "message": f"Multi-digit fret ({fret_str}) may affect template alignment",
+                "suggestion": f"Fret {fret_str} uses {len(fret_str)} character positions"
             })
     
     elif event_type == "chord":
@@ -560,12 +823,18 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         from_fret = str(event["fromFret"])
         to_fret = str(event["toFret"])
         symbol = "h" if event_type == "hammerOn" else "p"
-        
+        vibrato = event.get("vibrato", False)
+
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1
         
         # Compact format: "3h5" or "10p12"
         technique_str = f"{from_fret}{symbol}{to_fret}"
+
+        # Add vibrato notation if specified (applies to the destination note)
+        if vibrato:
+            technique_str += "~"
+
         string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
         
         # Warn about wide technique notations
@@ -584,12 +853,18 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         from_fret = str(event["fromFret"])
         to_fret = str(event["toFret"])
         symbol = "/" if event["direction"] == "up" else "\\"
-        
+        vibrato = event.get("vibrato", False)
+
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1
         
         # Compact format: "3/5" or "12\8"  
         technique_str = f"{from_fret}{symbol}{to_fret}"
+            
+        # Add vibrato notation if specified (applies to the destination note)
+        if vibrato:
+            technique_str += "~"
+
         string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
         
         if len(technique_str) > 3:
@@ -604,27 +879,26 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
     elif event_type == "bend":
         string_num = event["string"]
         beat = event["beat"]
-        fret = str(event["fret"])
-        bend_type = event.get("bendType", "bend")
+        fret = event["fret"]
         semitones = event.get("semitones", 1.0)
+        vibrato = event.get("vibrato", False)
     
         char_position = calculate_char_position(beat, measure_offset)
         line_index = string_num - 1
     
-        # Generate enhanced notation with semitone amount
-        if bend_type == "bend":
-            # Format semitones nicely - remove .0 for whole numbers
-            if semitones == int(semitones):
-                semitone_str = str(int(semitones))
-            else:
-                semitone_str = str(semitones)
-            technique_str = f"{fret}b{semitone_str}"
-        else:  # release
-            if semitones == int(semitones):
-                semitone_str = str(int(semitones))
-            else:
-                semitone_str = str(semitones)
-            technique_str = f"{fret}r{semitone_str}"
+        # Handle muted strings in bends (unusual but possible)
+        if isinstance(fret, str) and fret.lower() == "x":
+            fret_str = "x"
+        else:
+            fret_str = str(fret)
+    
+        # Generate enhanced notation with Unicode fraction semitone amounts
+        semitone_str = format_semitone_string(semitones)
+        technique_str = f"{fret_str}b{semitone_str}"
+
+        # Add vibrato notation if specified
+        if vibrato:
+            technique_str += "~"
     
         string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
     
@@ -636,8 +910,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
                 "beat": beat,
                 "message": f"Bend notation '{technique_str}' may require template adjustment",
                 "suggestion": f"Bend notation uses {len(technique_str)} character positions"
-            }) 
-    
+                }) 
     return warnings
 
 def calculate_char_position(beat: float, measure_offset: int) -> int:
