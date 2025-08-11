@@ -680,7 +680,7 @@ def place_measure_events(measure: Dict[str, Any], string_lines: List[str], measu
         if event.get("type") in ["palmMute", "chuck"]:
             continue
             
-        event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number)
+        event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
         warnings.extend(event_warnings)
     
     return warnings

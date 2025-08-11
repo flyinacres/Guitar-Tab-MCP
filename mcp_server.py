@@ -43,7 +43,7 @@ from core import (
 
 # Configure logging to stderr (stdout reserved for MCP JSON-RPC protocol)
 logging.basicConfig(
-    level=logging.INFO,  # Less verbose for production MCP server
+    level=logging.DEBUG,  # Less verbose for production MCP server
     format='%(asctime)s - MCP-TAB - %(levelname)s - %(message)s',
     stream=sys.stderr
 )

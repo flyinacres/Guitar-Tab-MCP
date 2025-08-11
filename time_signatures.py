@@ -55,8 +55,8 @@ TIME_SIGNATURE_CONFIGS = {
         "char_positions": {
             1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8, 3.0: 10, 3.5: 12
         },
-        "measure_width": 15,
-        "content_width": 14
+        "measure_width": 14,
+        "content_width": 13
     },
     
     "6/8": {
@@ -68,8 +68,8 @@ TIME_SIGNATURE_CONFIGS = {
         "char_positions": {
             1.0: 2, 1.33: 4, 1.67: 6, 2.0: 8, 2.33: 10, 2.67: 12
         },
-        "measure_width": 13,
-        "content_width": 12 
+        "measure_width": 14,
+        "content_width": 13 
     },
     
     "2/4": {
@@ -81,8 +81,8 @@ TIME_SIGNATURE_CONFIGS = {
         "char_positions": {
             1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8
         },
-        "measure_width": 9,
-        "content_width": 8 
+        "measure_width": 10,
+        "content_width": 9
     }
 }
 
