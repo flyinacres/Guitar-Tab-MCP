@@ -39,11 +39,12 @@ from fastmcp import FastMCP
 from pydantic import BaseModel
 
 # Import enhanced functionality
-from core import (
+from core_parts import (
     validate_tab_data, generate_tab_output, 
     check_attempt_limit_enhanced as check_attempt_limit
 )
-from tab_models import EnhancedTabRequest, EnhancedTabResponse
+from tab_models_parts import EnhancedTabRequestWithParts
+from tab_models import EnhancedTabResponse
 from tab_constants import (
     StrumDirection, DynamicLevel, ArticulationMark,
     VALID_EMPHASIS_VALUES, STRUM_POSITIONS_PER_MEASURE
