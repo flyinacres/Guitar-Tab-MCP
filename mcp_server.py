@@ -328,6 +328,47 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     
     The enhanced system maintains full compatibility while adding professional-level 
     musical notation capabilities to ASCII guitar tablature.
+
+    ## Strum Patterns (Measure Level)
+
+    Specify strum patterns per measure for maximum flexibility:
+
+    ```json
+    {
+      "timeSignature": "4/4",
+      "measures": [
+        {
+          "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+          "events": [{"type": "chord", ...}]
+        },
+        {
+          "strumPattern": ["D", "", "", "D", "", "U", "D", "U"], 
+          "events": [{"type": "chord", ...}]
+        },
+        {
+          "events": [{"type": "chord", ...}]  // No strum pattern
+        }
+      ]
+    }
+
+    Strum Pattern Length Requirements:
+
+    4/4 time: 8 positions ["D","","U","","D","U","D","U"]
+    3/4 time: 6 positions ["D","","U","","D","U"]
+    2/4 time: 4 positions ["D","","U",""]
+    6/8 time: 6 positions ["D","","","U","",""]
+
+    Valid Values:
+
+    "D" = Down strum
+    "U" = Up strum
+    "" = No strum (silence)
+
+    Notes:
+
+    Strum patterns are optional per measure
+    Each measure can have different patterns
+    Length must exactly match time signature
     """
     logger.info(f"Received enhanced tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")

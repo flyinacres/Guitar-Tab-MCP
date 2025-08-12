@@ -36,7 +36,7 @@ class SongPart(BaseModel):
     """
     name: Optional[str] = Field(None, description="Optional display name override")
     description: Optional[str] = Field(None, description="Description of this part")
-    measures: List[Dict[str, Any]] = Field(..., description="List of measure objects")
+    measures: List[Dict[str, Any]] = Field(..., description="Measures with optional strumPattern field")
     tempo_change: Optional[int] = Field(None, description="Tempo change for this part")
     key_change: Optional[str] = Field(None, description="Key change for this part")
     time_signature_change: Optional[str] = Field(None, description="Time signature change for this part")

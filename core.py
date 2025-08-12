@@ -103,6 +103,14 @@ def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"Emphasis validation failed: {emphasis_result['message']}")
         return emphasis_result
     
+    # Stage 6: Measure strum pattern validation
+    measures = data.get("measures", [])
+    time_sig = data.get("timeSignature", "4/4")
+    measure_strum_result = validate_measure_strum_patterns(measures, time_sig)
+    if measure_strum_result["isError"]:
+        logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
+        return measure_strum_result
+
     logger.info("All enhanced validation stages passed")
     return {"isError": False}
 
@@ -495,6 +503,38 @@ def validate_grace_note_conflicts(grace_notes: List[Dict], events_by_position: D
     
     return {"isError": False}
 
+def validate_measure_strum_patterns(measures: List[Dict[str, Any]], time_signature: str) -> Dict[str, Any]:
+    """Validate strum patterns at measure level."""
+    expected_positions = get_strum_positions_for_time_signature(time_signature)
+    
+    for measure_idx, measure in enumerate(measures, 1):
+        strum_pattern = measure.get("strumPattern")
+        if strum_pattern is None:
+            continue
+            
+        # Check length
+        if len(strum_pattern) != expected_positions:
+            return {
+                "isError": True,
+                "errorType": "validation_error",
+                "measure": measure_idx,
+                "message": f"Strum pattern in measure {measure_idx} has {len(strum_pattern)} positions, expected {expected_positions} for {time_signature}",
+                "suggestion": f"Use exactly {expected_positions} elements for {time_signature}"
+            }
+        
+        # Check values
+        for i, direction in enumerate(strum_pattern):
+            if direction not in ["D", "U", ""]:
+                return {
+                    "isError": True,
+                    "errorType": "validation_error", 
+                    "measure": measure_idx,
+                    "message": f"Invalid strum direction '{direction}' at position {i}",
+                    "suggestion": "Use 'D', 'U', or ''"
+                }
+    
+    return {"isError": False}
+
 def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: float) -> Dict[str, Any]:
     """
     Validate technique-specific rules that ensure playability and proper notation.
@@ -717,6 +757,26 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
 
 logger.info("Enhanced tab generation module loaded successfully")
 
+def generate_strum_line(measures: List[Dict[str, Any]], num_measures: int, time_signature: str) -> str:
+    """Generate strum line from measure strumPattern fields."""
+    total_width = calculate_total_width(time_signature, num_measures)
+    strum_chars = [' '] * total_width
+    
+    for measure_idx, measure in enumerate(measures):
+        strum_pattern = measure.get("strumPattern")
+        if not strum_pattern:
+            continue
+            
+        config = get_time_signature_config(time_signature)
+        for pattern_idx, direction in enumerate(strum_pattern):
+            if direction and pattern_idx < len(config["valid_beats"]):
+                beat = config["valid_beats"][pattern_idx]
+                char_position = calculate_char_position(beat, measure_idx, time_signature)
+                if char_position < total_width:
+                    strum_chars[char_position] = direction
+    
+    return "".join(strum_chars).rstrip()
+
 
 def generate_enhanced_header(data: Dict[str, Any]) -> List[str]:
     """
@@ -914,10 +974,6 @@ def generate_measure_group_enhanced(
     beat_line = generate_beat_markers(time_signature, num_measures)
     beat_line = " " + beat_line
 
-    # Conditionally add beat markers, always add string lines
-    show_beat_markers = tab_data.get("showBeatMarkers", True)
-    if show_beat_markers:
-        result.append(beat_line)
 
     # Initialize string lines with correct template for time signature
     string_lines = []
@@ -944,11 +1000,23 @@ def generate_measure_group_enhanced(
         if layer_content and layer_content.strip():
             result.append(layer_content)
     
+    # Conditionally add beat markers, always add string lines
+    show_beat_markers = tab_data.get("showBeatMarkers", True)
+    if show_beat_markers:
+        result.append(beat_line)
+
     # Always string lines
     result.extend(string_lines)
     
     # Add strum pattern at the bottom if present
     strum_line = display_layers.get(DisplayLayer.STRUM_PATTERN)
+    if strum_line and strum_line.strip():
+        result.append(strum_line)
+
+    # Generate strum pattern line from measures
+    strum_line = generate_strum_line(measures, num_measures, time_signature)
+
+    # Add strum pattern if any measures have patterns  
     if strum_line and strum_line.strip():
         result.append(strum_line)
     
