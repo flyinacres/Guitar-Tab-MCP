@@ -1,17 +1,21 @@
 ﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Guitar Tab Generator - MCP Server Implementation
-==============================================
+Guitar Tab Generator - Enhanced MCP Server Implementation
+========================================================
 
-FastMCP server implementation for LLM integration. This uses stdio transport
-to communicate with Claude and other LLM clients through the Model Context Protocol.
+Enhanced FastMCP server implementation with support for:
+- Strum patterns and direction indicators
+- Dynamic and emphasis markings  
+- Grace notes and advanced techniques
+- Multi-layer display system
+- Enhanced validation and error reporting
 
 Key MCP Implementation Details:
 - stdio transport only (stdout for JSON-RPC, stderr for logging)
 - Structured responses optimized for LLM parsing and error correction
 - Attempt tracking to prevent infinite regeneration loops
-- Comprehensive error messages with specific correction guidance
+- Comprehensive documentation with examples for all new features
 
 Usage:
     python mcp_server.py
@@ -30,201 +34,485 @@ For Claude Desktop integration, add to config:
 import sys
 import logging
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-# Import our core functionality
+# Import enhanced functionality
 from core import (
-    TabRequest, TabResponse, 
     validate_tab_data, generate_tab_output, 
-    check_attempt_limit
+    check_attempt_limit_enhanced as check_attempt_limit
+)
+from tab_models import EnhancedTabRequest, EnhancedTabResponse
+from tab_constants import (
+    StrumDirection, DynamicLevel, ArticulationMark,
+    VALID_EMPHASIS_VALUES, STRUM_POSITIONS_PER_MEASURE
 )
 
 # Configure logging to stderr (stdout reserved for MCP JSON-RPC protocol)
 logging.basicConfig(
-    level=logging.DEBUG,  # Less verbose for production MCP server
+    level=logging.DEBUG,  # Enhanced logging for new features
     format='%(asctime)s - MCP-TAB - %(levelname)s - %(message)s',
     stream=sys.stderr
 )
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# MCP Server Setup
+# Enhanced MCP Server Setup
 # ============================================================================
 
-# Initialize FastMCP server with descriptive metadata
-mcp = FastMCP("Guitar Tab Generator")
+# Initialize FastMCP server with enhanced metadata
+mcp = FastMCP("Enhanced Guitar Tab Generator")
 
 @mcp.tool()
-def generate_guitar_tab(tab_data: str) -> TabResponse:
+def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     """
-    Generate ASCII guitar tablature from structured JSON input.
+    Generate ASCII guitar tablature from structured JSON input with enhanced features.
     
-    Converts guitar tab specifications (notes, chords, techniques) into properly
-    formatted ASCII tablature with beat alignment. Supports chord names, palm mutes,
-    chucks, and string muting notation. Provides structured error messages for 
-    LLM correction when input is invalid.
+    Converts guitar tab specifications into properly formatted ASCII tablature with 
+    comprehensive support for musical notation, dynamics, strum patterns, and 
+    advanced guitar techniques. Provides structured error messages for LLM correction 
+    when input is invalid.
     
     Args:
         tab_data: Complete guitar tab specification with title, measures, and events
         
     Returns:
-        TabResponse with generated tab content or structured error information
+        EnhancedTabResponse with generated tab content, warnings, and metadata
         
-    Key Features:
-    - Supports notes, chords, hammer-ons, pull-offs, slides, and bends (with semitone amounts)
-    - Chord names displayed above tablature when provided
-    - Palm mute notation (PM) with duration indicators above tab
-    - Chuck notation (X) for percussive hits above tab
-    - String muting using 'x' instead of fret numbers
-    - Validates timing against time signature constraints
-    - Detects event conflicts (multiple notes on same string/beat)
-    - Tracks attempt count to prevent infinite LLM regeneration loops
-    - Provides warnings for formatting issues (multi-digit frets, etc.)
-
-    JSON Structure:
+    ## Enhanced Features (NEW)
+    
+    ### Strum Patterns
+    Create strum direction indicators below the tablature:
+    ```json
     {
-      "title": "string",
-      "timeSignature": "4/4|3/4|6/8", 
-      "measures": [{"events": [...]}]
+      "type": "strumPattern",
+      "startBeat": 1.0,
+      "pattern": ["D", "U", "", "D", "U", "", "D", "U"],
+      "measures": 1
     }
-                                      
-    Event Types:
-    
-    Basic Events:
-    - note: {"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24}
-    - chord: {"type": "chord", "beat": 1.0-4.5, "frets": [{"string": 1-6, "fret": 0-24}]}
-    
-    Guitar Techniques:
-    - hammerOn: {"type": "hammerOn", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}
-    - pullOff: {"type": "pullOff", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24}  
-    - slide: {"type": "slide", "string": 1-6, "startBeat": 1.0-4.5, "fromFret": 0-24, "toFret": 0-24, "direction": "up|down"}
-    - bend: {"type": "bend", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "semitones": 0.25-3.0}
-    
-    Chord Names:
-    - chord: {"type": "chord", "beat": 1.0-4.5, "chordName": "G", "frets": [{"string": 1-6, "fret": 0-24}]}
-      Note: chordName is optional but will be displayed above tab when provided
-    
-    String Muting:
-    - note: {"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": "x"}
-    - chord: {"type": "chord", "beat": 1.0-4.5, "frets": [{"string": 1-6, "fret": "x"}]}
-      Note: Use "x" instead of number for muted/dead strings
-    
-    Annotations (displayed above tablature):
-    - palmMute: {"type": "palmMute", "beat": 1.0-4.5, "duration": 1.0-4.0}
-      Creates "PM" with dashes showing duration: PM--------
-    - chuck: {"type": "chuck", "beat": 1.0-4.5}
-      Creates "X" above the specified beat for percussive hits
-    
-    Output Format Example:
     ```
-    Chord:  G              Em        
-    Annot:  PM------------ X    PM---
-      1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
-    |-3---x---0-------|0---x---0---3---|
-    |-0---x---0-------|0---x---0---0---|
-    |-0---x---0-------|0---x---0---0---|
-    |-0---x---2-------|2---x---2---0---|
-    |-2---x---2-------|2---x---2---2---|
-    |-3---x-----------|----x-----------|
+    **Output:** Shows "D U  D U  D U" below the tab content
+    
+    ### Dynamics and Emphasis
+    Add musical dynamics to any note or chord:
+    ```json
+    {
+      "type": "note",
+      "string": 1,
+      "beat": 1.0,
+      "fret": 3,
+      "emphasis": "f"
+    }
+    ```
+    **Dynamics:** pp, p, mp, mf, f, ff, cresc., dim., <, >
+    **Articulations:** >, -, ., staccato markings
+    
+    ### Grace Notes
+    Add ornamental grace notes:
+    ```json
+    {
+      "type": "graceNote",
+      "string": 1,
+      "beat": 2.0,
+      "fret": 5,
+      "graceFret": 3,
+      "graceType": "acciaccatura"
+    }
+    ```
+    **Output:** Shows "(3)5" for quick grace note leading to main note
+    
+    ### Enhanced Annotations
+    Improved palm mutes and chucks with intensity:
+    ```json
+    {
+      "type": "palmMute",
+      "beat": 1.0,
+      "duration": 2.0,
+      "intensity": "heavy"
+    }
+    ```
+    **Output:** Shows "PM(H)----" with intensity indicator
+    
+    ## Core Features (Enhanced)
+    
+    ### Basic Events
+    - **note**: `{"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "emphasis": "f"}`
+    - **chord**: `{"type": "chord", "beat": 1.0-4.5, "chordName": "G", "frets": [...], "emphasis": ">"}`
+    
+    ### Guitar Techniques (All support emphasis and vibrato)
+    - **hammerOn**: `{"type": "hammerOn", "string": 1-6, "startBeat": 1.0, "fromFret": 3, "toFret": 5, "vibrato": true, "emphasis": "mf"}`
+    - **pullOff**: `{"type": "pullOff", "string": 1-6, "startBeat": 1.0, "fromFret": 5, "toFret": 3, "emphasis": "p"}`  
+    - **slide**: `{"type": "slide", "string": 1-6, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up", "vibrato": true}`
+    - **bend**: `{"type": "bend", "string": 1-6, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true, "emphasis": "ff"}`
+    
+    ### Advanced Bend Notation (Enhanced)
+    Precise semitone control with Unicode fractions:
+    - `0.25` → "¼" (quarter step)
+    - `0.5` → "½" (half step) 
+    - `1.0` → "1" (whole step)
+    - `1.5` → "1½" (step and a half)
+    - `2.0` → "2" (whole tone)
+    
+    ### Enhanced Annotations
+    - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "light|medium|heavy"}`
+    - **chuck**: `{"type": "chuck", "beat": 2.0, "intensity": "heavy"}` → Shows "XH"
+    
+    ### String Muting (Enhanced)
+    - **Muted strings**: Use `"fret": "x"` for dead/muted strings in notes and chords
+    - **Emphasis on muted**: `{"type": "note", "string": 1, "beat": 1.0, "fret": "x", "emphasis": ">"}`
+    
+    ## Time Signature Support (Enhanced)
+    
+    ### Supported Time Signatures
+    - **4/4**: 8 strum positions per measure `["D","","U","","D","U","D","U"]`
+    - **3/4**: 6 strum positions per measure `["D","","U","","D","U"]`
+    - **2/4**: 4 strum positions per measure `["D","","U",""]`  
+    - **6/8**: 6 strum positions per measure `["D","","","U","",""]` (compound time)
+    
+    ### Strum Pattern Validation
+    - Pattern length must match time signature requirements
+    - Patterns can span multiple measures evenly
+    - Valid directions: "D" (down), "U" (up), "" (no strum)
+    
+    ## Enhanced JSON Structure
+    
+    ```json
+    {
+      "title": "Song Title",
+      "artist": "Artist Name",
+      "description": "Song description",
+      "timeSignature": "4/4",
+      "tempo": 120,
+      "key": "G major",
+      "capo": 2,
+      "attempt": 1,
+      "showStrumPattern": true,
+      "showDynamics": true,
+      "measures": [
+        {
+          "events": [
+            {
+              "type": "strumPattern",
+              "pattern": ["D", "", "U", "", "D", "U", "D", "U"],
+              "measures": 2
+            },
+            {
+              "type": "chord",
+              "beat": 1.0,
+              "chordName": "G",
+              "emphasis": "mf",
+              "frets": [
+                {"string": 6, "fret": 3},
+                {"string": 5, "fret": 2},
+                {"string": 1, "fret": 3}
+              ]
+            },
+            {
+              "type": "palmMute",
+              "beat": 2.5,
+              "duration": 1.0,
+              "intensity": "medium"
+            },
+            {
+              "type": "graceNote",
+              "string": 1,
+              "beat": 3.0,
+              "fret": 5,
+              "graceFret": 3,
+              "graceType": "acciaccatura"
+            }
+          ]
+        }
+      ]
+    }
     ```
     
-    Notation Examples:
-    - x = muted/dead string (no pitch)
-    - 3h5 = hammer-on from 3rd to 5th fret
-    - 5p3 = pull-off from 5th to 3rd fret
-    - 3/5 = slide up from 3rd to 5th fret
-    - 5\3 = slide down from 5th to 3rd fret
-
-    Bend notation examples:
-    - 7b½ = bend 7th fret up half semitone (quarter step)
-    - 8b1 = bend 8th fret up 1 semitone (half step)
-    - 9b1½ = bend 9th fret up 1.5 semitones (step and a half)
-    - 12b2 = bend 12th fret up 2 semitones (whole step)
-    - 5b¼ = quarter-tone bend at 5th fret
+    ## Enhanced Output Format
     
-    Palm Mute Duration:
-    - duration: 1.0 = PM covers 1 beat
-    - duration: 2.5 = PM covers 2.5 beats (PM-----)
-    - Dashes automatically calculated based on duration
+    ```
+    # Song Title
+    **Artist:** Artist Name
+    *Song description*
+    **Time Signature:** 4/4 | **Tempo:** 120 BPM | **Key:** G major | **Capo:** 2
     
-    String Numbers:
-    - 1 = high E string (thinnest)
-    - 2 = B string  
-    - 3 = G string
-    - 4 = D string
-    - 5 = A string
-    - 6 = low E string (thickest)
-
-    - 7~ = vibrato on 7th fret
-    - 12b1½~ = bend with vibrato
-    - 5h7~ = hammer-on with vibrato on destination note
-    - 8/12~ = slide with vibrato on destination note
-
-    JSON examples with vibrato:
-    - note: {"type": "note", "string": 1, "beat": 1.0, "fret": 7, "vibrato": true}
-    - bend: {"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.0, "vibrato": true}
-    - hammerOn: {"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 5, "toFret": 7, "vibrato": true}
-    - slide: {"type": "slide", "string": 1, "startBeat": 1.0, "fromFret": 5, "toFret": 8, "direction": "up", "vibrato": true}
-
-    Diminished chord examples:
-    - C° = C diminished
-    - F#°7 = F# diminished 7th
-    - Bb° = Bb diminished
+      G              Em            
+      mf             p             
+          PM(M)--        X     >   
+      1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &  
+    |-3------(3)5------|0---x---7b1½~----|
+    |-0---------------|0---x------------|
+    |-0---------------|0---x------------|
+    |-0---------------|2---x------------|
+    |-2---------------|2---x------------|
+    |-3---------------|0---x------------|
+      D   U   D U D U   D   U   D U D U
+    ```
+    
+    ## Enhanced Error Messages
+    
+    The system provides detailed error messages for:
+    - **Invalid strum patterns**: Length mismatches, invalid directions
+    - **Emphasis validation**: Invalid dynamic markings, incompatible combinations  
+    - **Grace note conflicts**: Missing target notes, timing issues
+    - **Advanced technique validation**: Complex bend/vibrato/emphasis combinations
+    
+    ## Musical Examples
+    
+    ### Rock Power Chord with Strum Pattern
+    ```json
+    {
+      "title": "Power Chord Rock",
+      "timeSignature": "4/4", 
+      "measures": [
+        {
+          "events": [
+            {"type": "strumPattern", "pattern": ["D","","","D","","U","D","U"]},
+            {"type": "chord", "beat": 1.0, "chordName": "E5", "emphasis": "f", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
+            {"type": "chord", "beat": 2.5, "chordName": "E5", "emphasis": ">", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
+            {"type": "palmMute", "beat": 3.0, "duration": 1.0, "intensity": "heavy"}
+          ]
+        }
+      ]
+    }
+    ```
+    
+    ### Classical Grace Note Passage  
+    ```json
+    {
+      "title": "Classical Ornaments",
+      "timeSignature": "3/4",
+      "measures": [
+        {
+          "events": [
+            {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "emphasis": "p"},
+            {"type": "note", "string": 1, "beat": 2.0, "fret": 7, "emphasis": "cresc."},
+            {"type": "bend", "string": 1, "beat": 3.0, "fret": 9, "semitones": 0.5, "vibrato": true, "emphasis": "f"}
+          ]
+        }
+      ]
+    }
+    ```
+    
+    ### Jazz Chord Progression with Dynamics
+    ```json
+    {
+      "title": "Jazz Changes", 
+      "timeSignature": "4/4",
+      "measures": [
+        {
+          "events": [
+            {"type": "chord", "beat": 1.0, "chordName": "Cmaj7", "emphasis": "mp", "frets": [{"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 0}]},
+            {"type": "chord", "beat": 3.0, "chordName": "Am7", "emphasis": "mf", "frets": [{"string": 5, "fret": 0}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 1}]}
+          ]
+        }
+      ]
+    }
+    ```
+    
+    ## Compatibility Notes
+    
+    - **Backwards Compatible**: All existing JSON structures continue to work
+    - **Progressive Enhancement**: New features are optional - tabs work without them
+    - **Graceful Degradation**: Invalid emphasis/strum patterns generate warnings, not errors
+    - **LLM Optimized**: Error messages designed for easy LLM understanding and correction
+    
+    ## Common Use Cases
+    
+    1. **Learning Strum Patterns**: Add strum direction indicators for practice
+    2. **Musical Expression**: Use dynamics to indicate volume and articulation changes  
+    3. **Advanced Techniques**: Combine bends, vibrato, and emphasis for realistic notation
+    4. **Educational Content**: Grace notes and ornaments for classical guitar instruction
+    5. **Genre-Specific Notation**: Palm mutes for metal, chucks for reggae, dynamics for classical
+    
+    The enhanced system maintains full compatibility while adding professional-level 
+    musical notation capabilities to ASCII guitar tablature.
     """
-    logger.info(f"Received data type: {type(tab_data)}")
-    logger.info(f"Received data: {tab_data}")
+    logger.info(f"Received enhanced tab generation request")
+    logger.debug(f"Request data type: {type(tab_data)}")
     
     try:
-        # Manually create TabRequest from dict
+        # Parse and validate JSON input
         data_dict = json.loads(tab_data)
-        logger.info(f"Parsed data: {data_dict}")
-        request = TabRequest(**data_dict)
-        logger.info(f"Processing tab generation request: (attempt {request.attempt})")
-                                
-        # Check attempt limit first to prevent infinite loops
-        attempt_error = check_attempt_limit(request.attempt)
-        if attempt_error:
-            logger.warning(f"Attempt limit exceeded: {request.attempt}")
-            return TabResponse(success=False, error=attempt_error)
+        logger.debug(f"Parsed JSON successfully, keys: {list(data_dict.keys())}")
         
-        # Validate input
+        # Create enhanced request model for validation
+        try:
+            request = EnhancedTabRequest(**data_dict)
+            logger.info(f"Enhanced request validated: '{request.title}' (attempt {request.attempt})")
+        except Exception as validation_error:
+            logger.warning(f"Enhanced model validation failed, using basic validation: {validation_error}")
+            # Fall back to basic validation for backwards compatibility
+            if "title" not in data_dict:
+                data_dict["title"] = "Untitled"
+            
+        # Check attempt limit first to prevent infinite loops
+        attempt = data_dict.get('attempt', 1)
+        attempt_error = check_attempt_limit(attempt)
+        if attempt_error:
+            logger.warning(f"Attempt limit exceeded: {attempt}")
+            return EnhancedTabResponse(success=False, error=attempt_error)
+        
+        # Enhanced validation pipeline
+        logger.debug("Starting enhanced validation pipeline")
         validation_result = validate_tab_data(data_dict)
         if validation_result["isError"]:
-            logger.warning(f"Validation failed: {validation_result['message']}")
-            return TabResponse(success=False, error=validation_result)
+            logger.warning(f"Enhanced validation failed: {validation_result['message']}")
+            return EnhancedTabResponse(success=False, error=validation_result)
+        
+        logger.info("Enhanced validation passed successfully")
                                             
-        # Generate tab with warnings
+        # Generate enhanced tab with all new features
+        logger.debug("Starting enhanced tab generation")
         tab_output, warnings = generate_tab_output(data_dict)
+        
+        # Create enhanced metadata
+        metadata = create_tab_metadata(data_dict, warnings)
+        logger.info(f"Enhanced tab generated successfully with {len(warnings)} warnings")
                                                   
-        return TabResponse(success=True, content=tab_output, warnings=warnings)
+        return EnhancedTabResponse(
+            success=True, 
+            content=tab_output, 
+            warnings=warnings,
+            metadata=metadata
+        )
+    
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing error: {e}")
+        return EnhancedTabResponse(
+            success=False, 
+            error={
+                "isError": True,
+                "errorType": "json_error",
+                "message": f"Invalid JSON format: {str(e)}",
+                "suggestion": "Check JSON syntax - ensure proper quotes, brackets, and commas"
+            }
+        )
     
     except Exception as e:
-        logger.error(f"Unexpected error during tab generation: {e}")
-        return TabResponse(
+        logger.error(f"Unexpected error during enhanced tab generation: {e}")
+        return EnhancedTabResponse(
             success=False, 
             error={
                 "isError": True,
                 "errorType": "processing_error",
                 "message": f"Unexpected error during tab generation: {str(e)}",
-                "suggestion": "Check input format and try again"
+                "suggestion": "Check input format and try again. For complex tabs, consider simplifying or breaking into sections."
             }
         )
 
+def create_tab_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Create enhanced metadata about the generated tab.
+    
+    Args:
+        data_dict: Original tab data
+        warnings: List of warnings generated during tab creation
+        
+    Returns:
+        Metadata dictionary with useful information for LLMs
+    """
+    measures = data_dict.get("measures", [])
+    total_measures = len(measures)
+    
+    # Analyze features used
+    features_used = set()
+    has_strum_pattern = False
+    has_dynamics = False
+    has_grace_notes = False
+    complexity_factors = []
+    
+    for measure in measures:
+        for event in measure.get("events", []):
+            event_type = event.get("type")
+            features_used.add(event_type)
+            
+            if event_type == "strumPattern":
+                has_strum_pattern = True
+            elif event.get("emphasis"):
+                has_dynamics = True
+            elif event_type == "graceNote":
+                has_grace_notes = True
+            elif event_type in ["bend", "slide", "hammerOn", "pullOff"]:
+                complexity_factors.append("advanced_techniques")
+            elif event_type == "chord" and len(event.get("frets", [])) > 4:
+                complexity_factors.append("complex_chords")
+    
+    # Determine complexity level
+    complexity_score = 0
+    if has_strum_pattern:
+        complexity_score += 1
+    if has_dynamics:
+        complexity_score += 1
+    if has_grace_notes:
+        complexity_score += 2
+    if len(complexity_factors) > 2:
+        complexity_score += 1
+    
+    if complexity_score >= 4:
+        complexity = "advanced"
+    elif complexity_score >= 2:
+        complexity = "intermediate"
+    else:
+        complexity = "beginner"
+    
+    # Count warning types
+    warning_types = {}
+    for warning in warnings:
+        warning_type = warning.get("warningType", "unknown")
+        warning_types[warning_type] = warning_types.get(warning_type, 0) + 1
+    
+    metadata = {
+        "totalMeasures": total_measures,
+        "timeSignature": data_dict.get("timeSignature", "4/4"),
+        "hasStrumPattern": has_strum_pattern,
+        "hasDynamics": has_dynamics,
+        "hasGraceNotes": has_grace_notes,
+        "featuresUsed": list(features_used),
+        "complexity": complexity,
+        "warningCount": len(warnings),
+        "warningTypes": warning_types,
+        "estimatedPlayTime": f"{total_measures * 4}+ seconds",  # Rough estimate
+        "recommendedSkillLevel": complexity,
+        "musicalElements": {
+            "chords": "chord" in features_used,
+            "singleNotes": "note" in features_used,
+            "techniques": bool(set(features_used) & {"hammerOn", "pullOff", "slide", "bend"}),
+            "percussive": bool(set(features_used) & {"chuck", "palmMute"}),
+            "ornaments": "graceNote" in features_used
+        }
+    }
+    
+    logger.debug(f"Created metadata: complexity={complexity}, features={len(features_used)}")
+    return metadata
+
 # ============================================================================
-# MCP Server Startup
+# Enhanced MCP Server Startup
 # ============================================================================
 
 def main():
     """
-    Start the MCP server.
+    Start the enhanced MCP server.
 
     This runs the FastMCP server in stdio mode for integration with
-    Claude Desktop and other MCP clients.
+    Claude Desktop and other MCP clients, with full support for
+    enhanced guitar tab features.
     """
-    logger.info("Starting Guitar Tab Generator MCP Server")
-    mcp.run()
+    logger.info("Starting Enhanced Guitar Tab Generator MCP Server")
+    logger.info(f"Enhanced features available: strum patterns, dynamics, grace notes, multi-layer display")
+    
+    # Log available constants for debugging
+    logger.debug(f"Strum directions available: {[d.value for d in StrumDirection]}")
+    logger.debug(f"Dynamic levels available: {[d.value for d in DynamicLevel]}")
+    logger.debug(f"Time signature strum positions: {STRUM_POSITIONS_PER_MEASURE}")
+    
+    try:
+        mcp.run()
+    except KeyboardInterrupt:
+        logger.info("Enhanced MCP server stopped by user")
+    except Exception as e:
+        logger.error(f"Enhanced MCP server error: {e}")
+        raise
 
 if __name__ == "__main__":
     main()

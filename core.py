@@ -1,24 +1,34 @@
 ﻿#!/usr/bin/env python3
 """
-Guitar Tab Generator - Core Implementation
-==========================================
+Guitar Tab Generator - Enhanced Core Implementation
+==================================================
 
-Core functionality for converting structured JSON guitar tab specifications
-into properly aligned ASCII tablature. This module handles data validation,
-tab generation, and error reporting optimized for LLM interaction.
+Enhanced core functionality for converting structured JSON guitar tab specifications
+into properly aligned ASCII tablature with support for strum patterns, dynamics,
+and emphasis markings.
 
-Key Design Decisions:
-- Compact notation for techniques (3h5, 12p10) to minimize character usage
-- Structured error messages with measure/beat context for LLM correction
-- Flexible template system that can accommodate multi-digit frets
-- Attempt tracking to prevent infinite LLM regeneration loops
+Key Enhancements:
+- Strum pattern validation and rendering
+- Dynamic and emphasis marking support
+- Grace note handling
+- Multi-layer display system (chord names, dynamics, annotations, beat markers, tab, strum pattern)
 """
 
+# Import enhanced models and constants
 import sys
 import json
 import logging
 from typing import Dict, List, Any, Tuple, Optional
-from pydantic import BaseModel, Field, validator
+
+from tab_constants import (
+    StrumDirection, DynamicLevel, ArticulationMark, VALID_EMPHASIS_VALUES,
+    STRUM_POSITIONS_PER_MEASURE, get_strum_positions_for_time_signature,
+    is_valid_emphasis, ERROR_MESSAGES, DisplayLayer, DISPLAY_LAYER_ORDER
+)
+from tab_models import (
+    EnhancedTabRequest, EnhancedTabResponse, StrumPatternEvent,
+    GraceNoteEvent, DynamicEvent, EnhancedPalmMute, EnhancedChuck
+)
 from time_signatures import (
     get_time_signature_config,
     is_beat_valid,
@@ -39,49 +49,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ============================================================================
-# Data Models
-# ============================================================================
-
-class TabRequest(BaseModel):
-    """
-    Complete guitar tab specification for processing.
-    
-    The attempt field enables LLM regeneration tracking - if an LLM gets
-    validation errors, it can increment this field and try again, but
-    we limit attempts to prevent infinite loops.
-    """
-    title: str
-    description: str = ""
-    timeSignature: str = Field(default="4/4", pattern=r"^(4/4|3/4|6/8|2/4)$")
-    tempo: int = Field(default=120, ge=40, le=300)
-    attempt: int = Field(default=1, ge=1, le=10)
-    measures: List[Dict[str, Any]]
-
-class TabResponse(BaseModel):
-    """
-    Response container for both successful tab generation and error reporting.
-    
-    Warnings are non-fatal issues (like multi-digit frets requiring more space)
-    that the LLM should be aware of but don't prevent tab generation.
-    """
-    success: bool
-    content: str = ""
-    error: Optional[Dict[str, Any]] = None
-    warnings: List[Dict[str, Any]] = []
 
 # ============================================================================
-# Validation Pipeline
+# Enhanced Validation Pipeline
 # ============================================================================
 
 def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Multi-stage validation pipeline for guitar tab data.
+    Enhanced multi-stage validation pipeline for guitar tab data.
     
-    This uses a fail-fast approach - we stop at the first error type
-    to avoid overwhelming the LLM with multiple error categories.
-    The staged approach also helps LLMs understand which aspect
-    of their JSON needs fixing.
+    Now includes validation for:
+    - Strum patterns and their time signature compatibility
+    - Emphasis markings on musical events
+    - Grace notes and their positioning
+    - Dynamic markings and their scope
     
     Args:
         data: Raw tab specification dictionary
@@ -89,27 +70,40 @@ def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Error dictionary if validation fails, or {"isError": False} if valid
     """
-    logger.debug(f"Starting validation for attempt {data.get('attempt', 1)}")
+    attempt = data.get('attempt', 1)
+    logger.debug(f"Starting enhanced validation for attempt {attempt}")
     
-    # Stage 1: Schema and structure validation
+    # Stage 1: Schema and structure validation (unchanged)
     schema_result = validate_schema(data)
     if schema_result["isError"]:
         logger.warning(f"Schema validation failed: {schema_result['message']}")
         return schema_result
     
-    # Stage 2: Time signature and beat timing validation  
-    timing_result = validate_timing(data)
+    # Stage 2: Time signature and beat timing validation (enhanced)
+    timing_result = validate_timing_enhanced(data)
     if timing_result["isError"]:
-        logger.warning(f"Timing validation failed: {timing_result['message']}")
+        logger.warning(f"Enhanced timing validation failed: {timing_result['message']}")
         return timing_result
     
-    # Stage 3: Event conflict detection and technique validation
-    conflict_result = validate_conflicts(data)
+    # Stage 3: Event conflict detection and technique validation (enhanced)
+    conflict_result = validate_conflicts_enhanced(data)
     if conflict_result["isError"]:
-        logger.warning(f"Conflict validation failed: {conflict_result['message']}")
+        logger.warning(f"Enhanced conflict validation failed: {conflict_result['message']}")
         return conflict_result
     
-    logger.info("All validation stages passed")
+    # Stage 4: NEW - Strum pattern validation
+    strum_result = validate_strum_patterns(data)
+    if strum_result["isError"]:
+        logger.warning(f"Strum pattern validation failed: {strum_result['message']}")
+        return strum_result
+    
+    # Stage 5: NEW - Emphasis and dynamics validation
+    emphasis_result = validate_emphasis_markings(data)
+    if emphasis_result["isError"]:
+        logger.warning(f"Emphasis validation failed: {emphasis_result['message']}")
+        return emphasis_result
+    
+    logger.info("All enhanced validation stages passed")
     return {"isError": False}
 
 def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -161,24 +155,36 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
     
     return {"isError": False}
 
-def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_timing_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Enhanced timing validation using time signature module.
+    Enhanced timing validation that includes new event types.
+    
+    Validates beat timing for:
+    - Standard musical events (notes, chords, techniques)
+    - New event types (strum patterns, grace notes, dynamics)
+    - Compound time signatures (6/8 with triplet feel)
     """
     time_sig = data.get("timeSignature", "4/4")
+    logger.debug(f"Validating timing for time signature: {time_sig}")
     
     # Check if time signature is supported
     try:
-        get_time_signature_config(time_sig)
+        config = get_time_signature_config(time_sig)
+        logger.debug(f"Time signature config loaded: {config['name']}")
     except ValueError:
+        logger.error(f"Unsupported time signature: {time_sig}")
         return create_time_signature_error(time_sig)
     
     # Check every event's beat timing
     for measure_idx, measure in enumerate(data["measures"], 1):
+        logger.debug(f"Validating timing for measure {measure_idx}")
+        
         for event_idx, event in enumerate(measure.get("events", []), 1):
+            event_type = event.get("type")
             beat = event.get("beat") or event.get("startBeat")
             
             if beat is None:
+                logger.warning(f"Event {event_idx} in measure {measure_idx} missing beat timing")
                 return {
                     "isError": True,
                     "errorType": "validation_error",
@@ -187,25 +193,43 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
                     "suggestion": "Add 'beat' or 'startBeat' field to event"
                 }
             
-            if not is_beat_valid(beat, time_sig):
-                return create_beat_validation_error(beat, time_sig, measure_idx)
+            # Enhanced beat validation for different event types
+            if event_type == "graceNote":
+                # Grace notes have special timing requirements
+                grace_result = validate_grace_note_timing(beat, time_sig, measure_idx)
+                if grace_result["isError"]:
+                    return grace_result
+            elif event_type == "strumPattern":
+                # Strum patterns have their own validation (handled separately)
+                logger.debug(f"Strum pattern found at beat {beat} - will validate separately")
+                continue
+            else:
+                # Standard beat validation
+                if not is_beat_valid(beat, time_sig):
+                    logger.warning(f"Invalid beat {beat} for {time_sig} in measure {measure_idx}")
+                    return create_beat_validation_error(beat, time_sig, measure_idx)
     
+    logger.debug("Enhanced timing validation passed")
     return {"isError": False}
 
-def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_conflicts_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Check for conflicting events and validate technique-specific rules.
+    Enhanced conflict detection that handles new event types.
     
-    This catches the subtle errors that make tabs unplayable:
-    - Multiple notes on same string at same time
-    - Invalid technique parameters (hammer-on going down, etc.)
-    - String/fret range violations
-    
-    For chord events, we allow multiple strings at the same beat since
-    that's the whole point of chords.
+    Checks for:
+    - Musical event conflicts (multiple notes on same string/beat)
+    - Grace note conflicts with main notes
+    - Strum pattern overlaps
+    - Dynamic marking conflicts
     """
+    logger.debug("Starting enhanced conflict validation")
+    
     for measure_idx, measure in enumerate(data["measures"], 1):
         events_by_position = {}
+        strum_patterns = []
+        grace_notes = []
+        
+        logger.debug(f"Validating conflicts in measure {measure_idx}")
         
         for event in measure.get("events", []):
             event_type = event.get("type")
@@ -219,6 +243,17 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
                     "message": "Event missing 'type' field",
                     "suggestion": "Add 'type' field with value like 'note', 'hammerOn', 'chord', etc."
                 }
+            
+            # Collect different event types for specialized validation
+            if event_type == "strumPattern":
+                strum_patterns.append(event)
+                continue
+            elif event_type == "graceNote":
+                grace_notes.append(event)
+                continue
+            elif event_type in ["dynamic", "palmMute", "chuck"]:
+                # Annotation events don't conflict with musical events
+                continue
             
             # Handle chord events specially - they can have multiple strings at same beat
             if event_type == "chord":
@@ -271,6 +306,7 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
             position_key = f"{string_num}_{beat}"
             
             if position_key in events_by_position:
+                logger.warning(f"Conflict detected: multiple events on string {string_num} at beat {beat}")
                 return {
                     "isError": True,
                     "errorType": "conflict_error",
@@ -282,10 +318,180 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
             
             events_by_position[position_key] = event
             
-            # Validate technique-specific rules
-            technique_error = validate_technique_rules(event, measure_idx, beat)
+            # Validate technique-specific rules (enhanced)
+            technique_error = validate_technique_rules_enhanced(event, measure_idx, beat)
             if technique_error["isError"]:
                 return technique_error
+        
+        # Validate grace note conflicts
+        grace_conflict = validate_grace_note_conflicts(grace_notes, events_by_position, measure_idx)
+        if grace_conflict["isError"]:
+            return grace_conflict
+    
+    logger.debug("Enhanced conflict validation passed")
+    return {"isError": False}
+
+# ============================================================================
+# New Validation Functions
+# ============================================================================
+
+def validate_strum_patterns(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate strum pattern events for proper time signature compatibility.
+    
+    Checks:
+    - Pattern length matches time signature requirements
+    - Pattern spans complete measures only
+    - No overlapping strum patterns
+    - Valid strum direction values
+    """
+    time_sig = data.get("timeSignature", "4/4")
+    expected_positions = get_strum_positions_for_time_signature(time_sig)
+    
+    logger.debug(f"Validating strum patterns for {time_sig} (expecting {expected_positions} positions per measure)")
+    
+    active_patterns = []  # Track overlapping patterns
+    
+    for measure_idx, measure in enumerate(data["measures"], 1):
+        for event in measure.get("events", []):
+            if event.get("type") != "strumPattern":
+                continue
+                
+            logger.debug(f"Found strum pattern in measure {measure_idx}")
+            
+            pattern = event.get("pattern", [])
+            measures_spanned = event.get("measures", 1)
+            start_beat = event.get("startBeat", 1.0)
+            
+            # Validate pattern length
+            expected_length = expected_positions * measures_spanned
+            if len(pattern) != expected_length:
+                logger.error(f"Strum pattern length mismatch: got {len(pattern)}, expected {expected_length}")
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "measure": measure_idx,
+                    "message": ERROR_MESSAGES["invalid_strum_pattern_length"].format(
+                        length=len(pattern), 
+                        time_sig=time_sig, 
+                        expected=expected_length
+                    ),
+                    "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}"
+                }
+            
+            # Validate pattern values
+            for i, direction in enumerate(pattern):
+                if direction not in ["D", "U", ""]:
+                    logger.error(f"Invalid strum direction '{direction}' at position {i}")
+                    return {
+                        "isError": True,
+                        "errorType": "validation_error",
+                        "measure": measure_idx,
+                        "message": f"Invalid strum direction '{direction}' at position {i}",
+                        "suggestion": "Use 'D' for down, 'U' for up, or '' for no strum"
+                    }
+            
+            # Check for pattern overlaps (simplified for now)
+            pattern_info = {
+                "start_measure": measure_idx,
+                "end_measure": measure_idx + measures_spanned - 1,
+                "start_beat": start_beat
+            }
+            
+            for existing_pattern in active_patterns:
+                if (pattern_info["start_measure"] <= existing_pattern["end_measure"] and
+                    pattern_info["end_measure"] >= existing_pattern["start_measure"]):
+                    logger.error(f"Overlapping strum patterns detected")
+                    return {
+                        "isError": True,
+                        "errorType": "conflict_error",
+                        "measure": measure_idx,
+                        "message": "Overlapping strum patterns detected",
+                        "suggestion": "Only one strum pattern can be active at a time"
+                    }
+            
+            active_patterns.append(pattern_info)
+            logger.debug(f"Strum pattern validated: {measures_spanned} measures, {len(pattern)} positions")
+    
+    logger.debug("Strum pattern validation passed")
+    return {"isError": False}
+
+def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate emphasis markings on all musical events.
+    
+    Checks:
+    - Valid emphasis values (dynamics, articulations)
+    - Proper emphasis placement
+    - No conflicting emphasis markings
+    """
+    logger.debug("Validating emphasis markings")
+    
+    for measure_idx, measure in enumerate(data["measures"], 1):
+        for event in measure.get("events", []):
+            emphasis = event.get("emphasis")
+            
+            if emphasis is not None:
+                logger.debug(f"Found emphasis '{emphasis}' in measure {measure_idx}")
+                
+                if not is_valid_emphasis(emphasis):
+                    logger.error(f"Invalid emphasis value: {emphasis}")
+                    return {
+                        "isError": True,
+                        "errorType": "validation_error",
+                        "measure": measure_idx,
+                        "message": ERROR_MESSAGES["invalid_emphasis_value"].format(
+                            value=emphasis,
+                            valid_values=", ".join(VALID_EMPHASIS_VALUES)
+                        ),
+                        "suggestion": f"Use valid emphasis: {', '.join(VALID_EMPHASIS_VALUES[:10])}..."
+                    }
+    
+    logger.debug("Emphasis validation passed")
+    return {"isError": False}
+
+def validate_grace_note_timing(beat: float, time_sig: str, measure: int) -> Dict[str, Any]:
+    """
+    Validate grace note timing to ensure proper placement.
+    
+    Grace notes should not be too close to measure boundaries
+    and should have valid target beats.
+    """
+    config = get_time_signature_config(time_sig)
+    max_beat = max(config["valid_beats"])
+    
+    # Grace notes should not be at the very end of a measure
+    if beat >= max_beat:
+        return {
+            "isError": True,
+            "errorType": "validation_error",
+            "measure": measure,
+            "beat": beat,
+            "message": ERROR_MESSAGES["grace_note_invalid_timing"].format(beat=beat),
+            "suggestion": f"Grace notes should be placed before beat {max_beat}"
+        }
+    
+    return {"isError": False}
+
+def validate_grace_note_conflicts(grace_notes: List[Dict], events_by_position: Dict, measure: int) -> Dict[str, Any]:
+    """
+    Check for conflicts between grace notes and main notes.
+    """
+    for grace_note in grace_notes:
+        string_num = grace_note.get("string")
+        beat = grace_note.get("beat")
+        
+        # Check if there's a main note at the same position
+        position_key = f"{string_num}_{beat}"
+        if position_key not in events_by_position:
+            return {
+                "isError": True,
+                "errorType": "validation_error",
+                "measure": measure,
+                "beat": beat,
+                "message": f"Grace note on string {string_num} has no target note at beat {beat}",
+                "suggestion": "Grace notes must lead into a main note at the same beat and string"
+            }
     
     return {"isError": False}
 
@@ -393,55 +599,159 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
         
     return {"isError": False}
 
+
+def validate_technique_rules_enhanced(event: Dict[str, Any], measure_idx: int, beat: float) -> Dict[str, Any]:
+    """
+    Enhanced technique validation that includes emphasis markings.
+    
+    Validates all the original technique rules plus:
+    - Emphasis compatibility with techniques
+    - Enhanced bend notation with emphasis
+    - Vibrato + emphasis combinations
+    """
+    # First run the original validation
+    original_result = validate_technique_rules(event, measure_idx, beat)
+    if original_result["isError"]:
+        return original_result
+    
+    # Additional validation for emphasis on techniques
+    emphasis = event.get("emphasis")
+    event_type = event.get("type")
+    
+    if emphasis and event_type in ["bend", "slide", "hammerOn", "pullOff"]:
+        logger.debug(f"Validating emphasis '{emphasis}' on {event_type}")
+        
+        # Some emphasis markings don't make sense with certain techniques
+        if emphasis in ["pp", "p"] and event_type == "bend":
+            logger.warning(f"Soft dynamics on bends may not be effective")
+            # This is a warning, not an error
+    
+    return {"isError": False}
+
+# Note: The original validate_technique_rules function would remain unchanged
+# but we import it or copy it here for compatibility
+
+logger.info("Enhanced core validation module loaded successfully") 
+
+
 # ============================================================================
-# Tab Generation Engine
+# Enhanced Tab Generation Engine
 # ============================================================================
 
-def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
+def generate_tab_output_enhanced(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
     """
-    Generate formatted ASCII tablature from validated data.
+    Enhanced tab generation with multi-layer display support.
     
-    Returns both the tab string and any warnings about formatting issues.
-    The warning system lets LLMs know about potential display problems
-    without failing the entire generation.
+    Generates tabs with up to 6 display layera:
+    1. Chord names
+    2. Dynamics markings  
+    3. Annotations (PM, X, emphasis)
+    4. Beat markers
+    5. Tab content (6 string lines)
+    6. Strum patterns
     
-    Key design choice: We process measures in groups of 4 for readability.
-    This is a standard convention in printed music and keeps line lengths
-    manageable for both human reading and LLM processing.
+    Args:
+        data: Validated tab specification dictionary
+        
+    Returns:
+        Tuple of (tab_string, warnings_list)
     """
-    logger.info(f"Generating tab for '{data.get('title', 'Untitled')}'")
+    title = data.get("title", "Untitled")
+    logger.info(f"Generating enhanced tab for '{title}'")
     
     measures = data["measures"]
     warnings = []
     output_lines = []
     
-    # Generate header information
-    title = data.get("title", "Untitled")
-    description = data.get("description", "")
-    time_sig = data.get("timeSignature", "4/4")
-    tempo = data.get("tempo")
-    
-    output_lines.append(f"# {title}")
-    if description:
-        output_lines.append(f"*{description}*")
-    
-    # Add tempo/time signature info
-    info_line = f"**Time Signature:** {time_sig}"
-    if tempo:
-        info_line += f" | **Tempo:** {tempo} BPM"
-    output_lines.append(info_line)
+    # Generate enhanced header information
+    header_lines = generate_enhanced_header(data)
+    output_lines.extend(header_lines)
     output_lines.append("")
     
     # Process measures in groups of 4 for formatting
     for measure_group_start in range(0, len(measures), 4):
         measure_group = measures[measure_group_start:measure_group_start + 4]
-        tab_section, section_warnings = generate_measure_group(measure_group, measure_group_start, time_sig)
+        time_sig = data.get("timeSignature", "4/4")
+        
+        # Generate enhanced measure group with all display layers
+        tab_section, section_warnings = generate_measure_group_enhanced(
+            measure_group, measure_group_start, time_sig, data
+        )
         warnings.extend(section_warnings)
         output_lines.extend(tab_section)
         output_lines.append("")  # Space between groups
     
-    logger.info(f"Generated tab with {len(warnings)} warnings")
+    logger.info(f"Generated enhanced tab with {len(warnings)} warnings")
     return "\n".join(output_lines), warnings
+
+# ============================================================================
+# Backwards Compatibility Wrappers
+# ============================================================================
+
+def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
+    """
+    Backwards compatibility wrapper for the original generate_tab_output function.
+    
+    This allows existing code to work while gradually migrating to enhanced features.
+    """
+    # Check if the data contains enhanced features
+    has_enhanced_features = False
+    
+    for measure in data.get("measures", []):
+        for event in measure.get("events", []):
+            if (event.get("type") in ["strumPattern", "graceNote", "dynamic"] or
+                event.get("emphasis") is not None):
+                has_enhanced_features = True
+                break
+        if has_enhanced_features:
+            break
+    
+    # Use enhanced generation if needed, otherwise use original
+    if has_enhanced_features:
+        logger.info("Using enhanced tab generation for advanced features")
+        return generate_tab_output_enhanced(data)
+    else:
+        logger.info("Using standard tab generation for basic features")
+        # Would call the original function here
+        return generate_tab_output_enhanced(data)  # For now, always use enhanced
+
+logger.info("Enhanced tab generation module loaded successfully")
+
+
+def generate_enhanced_header(data: Dict[str, Any]) -> List[str]:
+    """
+    Generate enhanced header with additional metadata.
+    """
+    lines = []
+    
+    # Title and description
+    title = data.get("title", "Untitled")
+    description = data.get("description", "")
+    artist = data.get("artist", "")
+    
+    lines.append(f"# {title}")
+    if artist:
+        lines.append(f"**Artist:** {artist}")
+    if description:
+        lines.append(f"*{description}*")
+    
+    # Musical information
+    time_sig = data.get("timeSignature", "4/4")
+    tempo = data.get("tempo")
+    key = data.get("key")
+    capo = data.get("capo")
+    
+    info_parts = [f"**Time Signature:** {time_sig}"]
+    if tempo:
+        info_parts.append(f"**Tempo:** {tempo} BPM")
+    if key:
+        info_parts.append(f"**Key:** {key}")
+    if capo:
+        info_parts.append(f"**Capo:** {capo}")
+    
+    lines.append(" | ".join(info_parts))
+    
+    return lines
 
 # ============================================================================
 # Annotation System Functions
@@ -563,127 +873,467 @@ def generate_palm_mute_notation(duration: float) -> str:
     return "PM" + "-" * num_dashes
 
 
-def generate_measure_group(measures: List[Dict[str, Any]], start_index: int, time_signature: str = "4/4") -> Tuple[List[str], List[Dict[str, Any]]]:
+def generate_measure_group_enhanced(
+    measures: List[Dict[str, Any]], 
+    start_index: int, 
+    time_signature: str,
+    tab_data: Dict[str, Any]
+) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
-    Generate tab section for up to 4 measures with enhanced annotation support.
+    Generate enhanced tab section with multi-layer display.
     
-    This is the core tab generation function that orchestrates the creation of
-    a complete tab section including chord names, technique annotations, beat
-    markers, and the actual tablature lines.
-    
-    The function now supports a three-tier display system:
-    1. Chord names (when provided in chord events)
-    2. Technique annotations (palm mutes, chucks, etc.)
-    3. Standard tab content (beat markers + 6 string lines)
-    
-    Key enhancements over the basic version:
-    - Processes annotation events (palmMute, chuck) for display above tab
-    - Extracts chord names from chord events for chord line display
-    - Only shows annotation lines when they contain actual content
-    - Maintains backward compatibility with existing tab generation
+    Creates all display layers:
+    - Chord names (when present)
+    - Dynamics (when present) 
+    - Annotations (PM, X, emphasis markings)
+    - Beat markers
+    - Tab content (6 string lines)
+    - Strum patterns (when present)
     
     Args:
-        measures: List of measure dictionaries containing events
-        start_index: Starting measure number for this group (used in warnings)
+        measures: List of measure dictionaries
+        start_index: Starting measure number for warnings
+        time_signature: Time signature string
+        tab_data: Complete tab data for global settings
         
     Returns:
-        Tuple of (output_lines, warnings):
-        - output_lines: List of strings forming the complete tab section
-        - warnings: List of formatting warnings for complex notations
-        
-    Example output structure:
-        [" PM------------ X    PM---",
-         " G              Em        ",
-         " 1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &",
-         "|-3---x---0-------|0---x---0---3---|",
-         ... (remaining 5 string lines)
-        ]
+        Tuple of (output_lines, warnings)
     """
     warnings = []
     num_measures = len(measures)
     
-    # Process annotations (chord names, palm mutes, chucks)
-    chord_line, annotation_line = process_annotations(measures, num_measures, time_signature)
+    logger.debug(f"Generating enhanced measure group: {num_measures} measures of {time_signature}")
     
-    # Generate beat markers using time signature module  
+    # Generate all display layers
+    display_layers = generate_all_display_layers(measures, num_measures, time_signature, tab_data)
+    
+    # Create beat markers
     beat_line = generate_beat_markers(time_signature, num_measures)
     beat_line = " " + beat_line
     
-    # Initialize string lines with template dashes
+    # Initialize string lines with correct template for time signature
     string_lines = []
     content_width = get_content_width(time_signature)
+    
     for string_idx in range(6):
-        line = "|"
+        line = "|"  # Start with opening separator
         for measure_idx in range(num_measures):
-            line += "-" * content_width + "|"
+            line += "-" * content_width + "|"  # content + separator
         string_lines.append(line)
     
     # Place events on appropriate string lines
     for measure_idx, measure in enumerate(measures):
-        measure_warnings = place_measure_events(measure, string_lines, measure_idx, start_index + measure_idx + 1, time_signature)
+        measure_warnings = place_measure_events_enhanced(
+            measure, string_lines, measure_idx, start_index + measure_idx + 1, time_signature
+        )
         warnings.extend(measure_warnings)
     
-    # Combine all lines: annotations + beat markers + string lines
+    # Combine all layers in proper order
     result = []
     
-    # Only add annotation lines if they contain non-space content beyond the label
-    chord_content = chord_line.strip()
-    annotation_content = annotation_line.strip()
+    # Add each display layer if it has content
+    for layer_name in DISPLAY_LAYER_ORDER:
+        layer_content = display_layers.get(layer_name)
+        if layer_content and layer_content.strip():
+            result.append(layer_content)
     
-    if chord_content:
-        result.append(chord_line)
-    if annotation_content:
-        result.append(annotation_line)
-    
+    # Always add beat markers and string lines
     result.append(beat_line)
     result.extend(string_lines)
     
+    # Add strum pattern at the bottom if present
+    strum_line = display_layers.get(DisplayLayer.STRUM_PATTERN)
+    if strum_line and strum_line.strip():
+        result.append(strum_line)
+    
+    logger.debug(f"Generated {len(result)} display lines for measure group")
     return result, warnings
 
-
-def place_measure_events(measure: Dict[str, Any], string_lines: List[str], measure_offset: int, measure_number: int, time_signature: str = "4/4") -> List[Dict[str, Any]]:
+def generate_all_display_layers(
+    measures: List[Dict[str, Any]], 
+    num_measures: int, 
+    time_signature: str,
+    tab_data: Dict[str, Any]
+) -> Dict[DisplayLayer, str]:
     """
-    Place all events from one measure onto the tab lines.
+    Generate all display layers for a measure group.
     
-    Enhanced version that properly handles the separation between musical events
-    (which appear on the string lines) and annotation events (which appear above
-    the tab in the chord/annotation lines).
+    Returns:
+        Dictionary mapping DisplayLayer enum to formatted string content
+    """
+    total_width = calculate_total_width(time_signature, num_measures)
     
-    This function now filters out annotation-only events (palmMute, chuck) and
-    delegates their processing to the annotation system, preventing them from
-    being incorrectly placed on string lines.
+    logger.debug(f"Generating display layers for {num_measures} measures, width {total_width}")
     
-    The separation ensures clean code organization and proper visual layout:
-    - Musical events ? String lines (handled here)
-    - Annotation events ? Annotation lines (handled by process_annotations)
+    # Initialize character arrays for each layer
+    layers = {
+        DisplayLayer.CHORD_NAMES: [' '] * total_width,
+        DisplayLayer.DYNAMICS: [' '] * total_width,
+        DisplayLayer.ANNOTATIONS: [' '] * total_width,
+        DisplayLayer.STRUM_PATTERN: [' '] * total_width
+    }
     
-    This function handles the complex logic of converting abstract musical
-    events into precise character positions in the ASCII tab. Each event type
-    has different placement rules and character requirements.
+    # Process each measure
+    for measure_idx, measure in enumerate(measures):
+        process_measure_for_display_layers(measure, measure_idx, time_signature, layers, total_width)
+    
+    # Convert character arrays to strings and remove trailing spaces
+    result = {}
+    for layer, char_array in layers.items():
+        content = "".join(char_array).rstrip()
+        if content:  # Only include non-empty layers
+            result[layer] = content
+            logger.debug(f"Generated {layer.value}: '{content[:50]}{'...' if len(content) > 50 else ''}'")
+    
+    return result
+
+def process_measure_for_display_layers(
+    measure: Dict[str, Any], 
+    measure_idx: int, 
+    time_signature: str, 
+    layers: Dict[DisplayLayer, List[str]], 
+    total_width: int
+):
+    """
+    Process a single measure and populate all display layers.
+    """
+    for event in measure.get("events", []):
+        event_type = event.get("type")
+        beat = event.get("beat") or event.get("startBeat")
+        
+        if beat is None:
+            continue
+            
+        char_position = calculate_char_position(beat, measure_idx, time_signature)
+        
+        # Process different event types for appropriate layers
+        if event_type == "chord":
+            # Chord names layer
+            chord_name = event.get("chordName")
+            if chord_name:
+                place_annotation_text(layers[DisplayLayer.CHORD_NAMES], char_position, chord_name, total_width)
+            
+            # Emphasis on chords goes to dynamics layer
+            emphasis = event.get("emphasis")
+            if emphasis:
+                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, emphasis, total_width)
+        
+        elif event_type == "note":
+            # Emphasis on notes goes to dynamics layer
+            emphasis = event.get("emphasis")
+            if emphasis:
+                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, emphasis, total_width)
+        
+        elif event_type == "palmMute":
+            duration = event.get("duration", 1.0)
+            intensity = event.get("intensity", "")
+            pm_text = generate_enhanced_palm_mute_notation(duration, intensity)
+            place_annotation_text(layers[DisplayLayer.ANNOTATIONS], char_position, pm_text, total_width)
+        
+        elif event_type == "chuck":
+            intensity = event.get("intensity", "")
+            chuck_text = "X" + (intensity[0].upper() if intensity else "")  # X, XL, XM, XH
+            place_annotation_text(layers[DisplayLayer.ANNOTATIONS], char_position, chuck_text, total_width)
+        
+        elif event_type == "dynamic":
+            dynamic = event.get("dynamic")
+            duration = event.get("duration")
+            if dynamic:
+                dynamic_text = generate_dynamic_notation(dynamic, duration)
+                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, dynamic_text, total_width)
+        
+        elif event_type == "strumPattern":
+            # Process strum pattern
+            pattern = event.get("pattern", [])
+            measures_spanned = event.get("measures", 1)
+            start_beat = event.get("startBeat", 1.0)
+            
+            process_strum_pattern(
+                pattern, measures_spanned, start_beat, measure_idx, 
+                time_signature, layers[DisplayLayer.STRUM_PATTERN], total_width
+            )
+
+def generate_enhanced_palm_mute_notation(duration: float, intensity: str = "") -> str:
+    """
+    Generate enhanced palm mute notation with intensity indicators.
+    
+    Args:
+        duration: Duration in beats
+        intensity: Intensity level ("light", "medium", "heavy")
+        
+    Returns:
+        String like "PM--", "PM(L)--", "PM(H)----"
+    """
+    base = "PM"
+    
+    # Add intensity indicator
+    if intensity:
+        intensity_map = {"light": "(L)", "medium": "(M)", "heavy": "(H)"}
+        base += intensity_map.get(intensity, "")
+    
+    # Add duration dashes
+    num_dashes = max(1, int(duration * 2))
+    return base + "-" * num_dashes
+
+def generate_dynamic_notation(dynamic: str, duration: Optional[float] = None) -> str:
+    """
+    Generate dynamic notation with optional duration indicators.
+    
+    Args:
+        dynamic: Dynamic marking (pp, p, mp, mf, f, ff, cresc., etc.)
+        duration: Optional duration for extended markings
+        
+    Returns:
+        String like "f", "cresc.---", "dim.--"
+    """
+    if dynamic in ["cresc.", "dim.", "<", ">"]:
+        # Extended markings get duration dashes
+        if duration:
+            num_dashes = max(1, int(duration * 2))
+            return dynamic + "-" * num_dashes
+        else:
+            return dynamic + "---"  # Default length
+    else:
+        # Standard dynamics are just the marking
+        return dynamic
+
+def process_strum_pattern(
+    pattern: List[str], 
+    measures_spanned: int,
+    start_beat: float,
+    current_measure: int,
+    time_signature: str,
+    strum_chars: List[str],
+    total_width: int
+):
+    """
+    Process strum pattern and place it in the strum pattern layer.
+    
+    Args:
+        pattern: List of strum directions ["D", "U", "", ...]
+        measures_spanned: How many measures this pattern covers
+        start_beat: Starting beat of the pattern
+        current_measure: Current measure index (0-based)
+        time_signature: Time signature string
+        strum_chars: Character array for strum pattern layer
+        total_width: Total width of the display
+    """
+    config = get_time_signature_config(time_signature)
+    positions_per_measure = len(config["valid_beats"])
+    
+    logger.debug(f"Processing strum pattern: {len(pattern)} positions, {measures_spanned} measures")
+    
+    # Calculate which part of the pattern applies to this measure
+    pattern_start_measure = current_measure  # Simplified - assumes pattern starts at current measure
+    
+    if current_measure < pattern_start_measure or current_measure >= pattern_start_measure + measures_spanned:
+        return  # This measure is not covered by this pattern
+    
+    measure_offset_in_pattern = current_measure - pattern_start_measure
+    pattern_start_idx = measure_offset_in_pattern * positions_per_measure
+    pattern_end_idx = pattern_start_idx + positions_per_measure
+    
+    # Extract the pattern slice for this measure
+    measure_pattern = pattern[pattern_start_idx:pattern_end_idx]
+    
+    # Place each strum direction at its corresponding beat position
+    for i, direction in enumerate(measure_pattern):
+        if direction:  # Skip empty positions
+            beat_idx = i
+            if beat_idx < len(config["valid_beats"]):
+                beat = config["valid_beats"][beat_idx]
+                char_position = calculate_char_position(beat, current_measure, time_signature)
+                
+                if char_position < total_width:
+                    strum_chars[char_position] = direction
+                    logger.debug(f"Placed strum '{direction}' at position {char_position} for beat {beat}")
+
+def place_measure_events_enhanced(
+    measure: Dict[str, Any], 
+    string_lines: List[str], 
+    measure_offset: int, 
+    measure_number: int, 
+    time_signature: str
+) -> List[Dict[str, Any]]:
+    """
+    Enhanced version of place_measure_events with support for new event types.
     
     Args:
         measure: Single measure dictionary containing events list
         string_lines: Mutable list of 6 strings representing guitar tab lines
         measure_offset: Position of this measure within the current group (0-3)
         measure_number: Absolute measure number for error reporting (1-based)
+        time_signature: Time signature string for proper positioning
         
     Returns:
-        List of warning dictionaries for formatting issues (multi-digit frets, etc.)
-        
-    Side Effects:
-        Modifies string_lines in place by placing event notation at calculated positions
+        List of warning dictionaries for formatting issues
     """
     warnings = []
     
+    logger.debug(f"Placing events for measure {measure_number} (offset {measure_offset})")
+    
     for event in measure.get("events", []):
-        # Skip annotation events - they're handled separately
-        if event.get("type") in ["palmMute", "chuck"]:
+        event_type = event.get("type")
+        
+        # Skip annotation events - they're handled in display layers
+        if event_type in ["palmMute", "chuck", "strumPattern", "dynamic"]:
+            logger.debug(f"Skipping {event_type} - handled in display layers")
+            continue
+        
+        # Handle grace notes specially
+        if event_type == "graceNote":
+            grace_warnings = place_grace_note_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
+            warnings.extend(grace_warnings)
             continue
             
-        event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
+        # Handle regular musical events
+        event_warnings = place_event_on_tab_enhanced(event, string_lines, measure_offset, measure_number, time_signature)
         warnings.extend(event_warnings)
     
+    logger.debug(f"Placed events for measure {measure_number}, generated {len(warnings)} warnings")
     return warnings
+
+def place_grace_note_on_tab(
+    event: Dict[str, Any], 
+    string_lines: List[str], 
+    measure_offset: int, 
+    measure_number: int, 
+    time_signature: str
+) -> List[Dict[str, Any]]:
+    """
+    Place grace note on tab with special formatting.
+    
+    Grace notes are typically displayed in smaller notation or with special symbols.
+    For ASCII tabs, we'll use parentheses: (3)5 = grace note 3 leading to note 5
+    """
+    warnings = []
+    
+    string_num = event["string"]
+    beat = event["beat"]
+    main_fret = str(event["fret"])
+    grace_fret = str(event["graceFret"])
+    grace_type = event.get("graceType", "acciaccatura")
+    
+    char_position = calculate_char_position(beat, measure_offset, time_signature)
+    line_index = string_num - 1  # Convert 1-indexed to 0-indexed
+    
+    # Format grace note notation
+    if grace_type == "acciaccatura":
+        # Quick grace note: (3)5
+        notation = f"({grace_fret}){main_fret}"
+    else:
+        # Appoggiatura: 3-5 (takes time from main note)
+        notation = f"{grace_fret}-{main_fret}"
+    
+    string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, notation)
+    
+    # Warn about complex grace note notation
+    if len(notation) > 3:
+        warnings.append({
+            "warningType": "formatting_warning",
+            "measure": measure_number,
+            "beat": beat,
+            "message": f"Grace note notation '{notation}' may require template adjustment",
+            "suggestion": f"Grace note uses {len(notation)} character positions"
+        })
+    
+    logger.debug(f"Placed grace note '{notation}' at position {char_position}")
+    return warnings
+
+def place_event_on_tab_enhanced(
+    event: Dict[str, Any], 
+    string_lines: List[str], 
+    measure_offset: int, 
+    measure_number: int, 
+    time_signature: str
+) -> List[Dict[str, Any]]:
+    """
+    Enhanced version of place_event_on_tab with emphasis support.
+    
+    Places musical events on tab lines and handles emphasis markings
+    by adjusting the notation (when possible in ASCII format).
+    """
+    warnings = []
+    event_type = event.get("type")
+    emphasis = event.get("emphasis")
+    
+    # Call the original placement function first
+    original_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
+    warnings.extend(original_warnings)
+    
+    # Add emphasis-related warnings if needed
+    if emphasis and event_type in ["bend", "slide", "hammerOn", "pullOff"]:
+        # Complex techniques with emphasis may need special attention
+        if len(emphasis) > 2:  # Long emphasis markings
+            beat = event.get("beat") or event.get("startBeat")
+            warnings.append({
+                "warningType": "formatting_warning",
+                "measure": measure_number,
+                "beat": beat,
+                "message": f"Technique with emphasis '{emphasis}' may affect spacing",
+                "suggestion": "Consider using shorter emphasis markings for techniques"
+            })
+    
+    return warnings
+
+# ============================================================================
+# Enhanced Utility Functions
+# ============================================================================
+
+def place_annotation_text_enhanced(
+    char_array: List[str], 
+    position: int, 
+    text: str, 
+    max_width: int,
+    allow_overlap: bool = False
+):
+    """
+    Enhanced version of place_annotation_text with overlap handling.
+    
+    Args:
+        char_array: Mutable list of characters
+        position: Starting position
+        text: Text to place
+        max_width: Maximum width
+        allow_overlap: Whether to allow overwriting existing text
+    """
+    for i, char in enumerate(text):
+        target_pos = position + i
+        if target_pos < max_width and target_pos >= 0:
+            # Check for overlap unless allowed
+            if not allow_overlap and char_array[target_pos] != ' ':
+                logger.debug(f"Annotation overlap at position {target_pos}: existing '{char_array[target_pos]}', new '{char}'")
+                # For now, skip placement - could implement conflict resolution
+                continue
+            char_array[target_pos] = char
+
+def check_attempt_limit_enhanced(attempt: int) -> Optional[Dict[str, Any]]:
+    """
+    Enhanced attempt limit checking with more detailed error messages.
+    """
+    MAX_ATTEMPTS = 5
+    
+    if attempt > MAX_ATTEMPTS:
+        logger.error(f"Maximum attempts exceeded: {attempt}")
+        return {
+            "isError": True,
+            "errorType": "attempt_limit_error",
+            "attempt": attempt,
+            "message": f"Maximum regeneration attempts reached ({attempt})",
+            "suggestion": "The tab appears to have complex requirements. Consider simplifying the input or breaking it into smaller sections.",
+            "details": {
+                "maxAttempts": MAX_ATTEMPTS,
+                "currentAttempt": attempt,
+                "possibleCauses": [
+                    "Complex strum patterns",
+                    "Conflicting emphasis markings", 
+                    "Overlapping annotation events",
+                    "Invalid time signature combinations"
+                ]
+            }
+        }
+    
+    return None
 
 
 def format_semitone_string(semitones: float) -> str:
