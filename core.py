@@ -54,65 +54,6 @@ logger = logging.getLogger(__name__)
 # Enhanced Validation Pipeline
 # ============================================================================
 
-def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Enhanced multi-stage validation pipeline for guitar tab data.
-    
-    Now includes validation for:
-    - Strum patterns and their time signature compatibility
-    - Emphasis markings on musical events
-    - Grace notes and their positioning
-    - Dynamic markings and their scope
-    
-    Args:
-        data: Raw tab specification dictionary
-        
-    Returns:
-        Error dictionary if validation fails, or {"isError": False} if valid
-    """
-    attempt = data.get('attempt', 1)
-    logger.debug(f"Starting enhanced validation for attempt {attempt}")
-    
-    # Stage 1: Schema and structure validation (unchanged)
-    schema_result = validate_schema(data)
-    if schema_result["isError"]:
-        logger.warning(f"Schema validation failed: {schema_result['message']}")
-        return schema_result
-    
-    # Stage 2: Time signature and beat timing validation (enhanced)
-    timing_result = validate_timing_enhanced(data)
-    if timing_result["isError"]:
-        logger.warning(f"Enhanced timing validation failed: {timing_result['message']}")
-        return timing_result
-    
-    # Stage 3: Event conflict detection and technique validation (enhanced)
-    conflict_result = validate_conflicts_enhanced(data)
-    if conflict_result["isError"]:
-        logger.warning(f"Enhanced conflict validation failed: {conflict_result['message']}")
-        return conflict_result
-    
-    # Stage 4: NEW - Strum pattern validation
-    strum_result = validate_strum_patterns(data)
-    if strum_result["isError"]:
-        logger.warning(f"Strum pattern validation failed: {strum_result['message']}")
-        return strum_result
-    
-    # Stage 5: NEW - Emphasis and dynamics validation
-    emphasis_result = validate_emphasis_markings(data)
-    if emphasis_result["isError"]:
-        logger.warning(f"Emphasis validation failed: {emphasis_result['message']}")
-        return emphasis_result
-    
-    # Stage 6: Measure strum pattern validation
-    measures = data.get("measures", [])
-    time_sig = data.get("timeSignature", "4/4")
-    measure_strum_result = validate_measure_strum_patterns(measures, time_sig)
-    if measure_strum_result["isError"]:
-        logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
-        return measure_strum_result
-
-    logger.info("All enhanced validation stages passed")
-    return {"isError": False}
 
 def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
     """

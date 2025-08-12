@@ -36,6 +36,7 @@ from tab_models_parts import (
 from core import (
     validate_schema, validate_timing_enhanced, validate_conflicts_enhanced,
     validate_strum_patterns, validate_emphasis_markings,
+    validate_measure_strum_patterns,
     generate_measure_group_enhanced, place_measure_events_enhanced,
     generate_all_display_layers, process_measure_for_display_layers,
     place_annotation_text, generate_enhanced_palm_mute_notation,
@@ -118,6 +119,14 @@ def validate_tab_data_legacy(data: Dict[str, Any]) -> Dict[str, Any]:
     emphasis_result = validate_emphasis_markings(data)
     if emphasis_result["isError"]:
         return emphasis_result
+
+    # Stage 6: Measure strum pattern validation
+    measures = data.get("measures", [])
+    time_sig = data.get("timeSignature", "4/4")
+    measure_strum_result = validate_measure_strum_patterns(measures, time_sig)
+    if measure_strum_result["isError"]:
+        logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
+        return measure_strum_result
     
     logger.info("All validation stages passed")
     return {"isError": False}
