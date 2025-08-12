@@ -1267,6 +1267,38 @@ def place_measure_events_enhanced(
     logger.debug(f"Placed events for measure {measure_number}, generated {len(warnings)} warnings")
     return warnings
 
+
+def convert_to_superscript(digit_string: str) -> str:
+    """Convert digit string to superscript Unicode."""
+    superscript_map = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
+    }
+    
+    result = ""
+    for char in digit_string:
+        if char in superscript_map:
+            result += superscript_map[char]
+        else:
+            result += char  # Keep non-digits as-is
+    return result
+
+def convert_to_subscript(digit_string: str) -> str:
+    """Convert digit string to subscript Unicode."""
+    subscript_map = {
+        '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+        '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+    }
+    
+    result = ""
+    for char in digit_string:
+        if char in subscript_map:
+            result += subscript_map[char]
+        else:
+            result += char  # Keep non-digits as-is
+    return result
+
+
 def place_grace_note_on_tab(
     event: Dict[str, Any], 
     string_lines: List[str], 
@@ -1274,12 +1306,7 @@ def place_grace_note_on_tab(
     measure_number: int, 
     time_signature: str
 ) -> List[Dict[str, Any]]:
-    """
-    Place grace note on tab with special formatting.
-    
-    Grace notes are typically displayed in smaller notation or with special symbols.
-    For ASCII tabs, we'll use parentheses: (3)5 = grace note 3 leading to note 5
-    """
+    """Place grace note on tab with superscript notation."""
     warnings = []
     
     string_num = event["string"]
@@ -1291,18 +1318,22 @@ def place_grace_note_on_tab(
     char_position = calculate_char_position(beat, measure_offset, time_signature)
     line_index = string_num - 1  # Convert 1-indexed to 0-indexed
     
+    # Convert grace fret to superscript
+    superscript_grace = convert_to_superscript(grace_fret)
+    
     # Format grace note notation
     if grace_type == "acciaccatura":
-        # Quick grace note: (3)5
-        notation = f"({grace_fret}){main_fret}"
+        # Quick grace note: ³5
+        notation = f"{superscript_grace}{main_fret}"
     else:
-        # Appoggiatura: 3-5 (takes time from main note)
-        notation = f"{grace_fret}-{main_fret}"
+        # Appoggiatura: ₃5 (using subscript for distinction)
+        subscript_grace = convert_to_subscript(grace_fret)
+        notation = f"{subscript_grace}{main_fret}"
     
     string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, notation)
     
-    # Warn about complex grace note notation
-    if len(notation) > 3:
+    # Update warning for new shorter notation
+    if len(notation) > 2:
         warnings.append({
             "warningType": "formatting_warning",
             "measure": measure_number,
@@ -1313,6 +1344,7 @@ def place_grace_note_on_tab(
     
     logger.debug(f"Placed grace note '{notation}' at position {char_position}")
     return warnings
+
 
 def place_event_on_tab_enhanced(
     event: Dict[str, Any], 

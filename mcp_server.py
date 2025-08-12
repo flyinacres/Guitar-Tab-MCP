@@ -110,7 +110,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     **Articulations:** >, -, ., staccato markings
     
     ### Grace Notes
-    Add ornamental grace notes:
+    Add ornamental grace notes with clean superscript notation:
     ```json
     {
       "type": "graceNote",
@@ -121,8 +121,13 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
       "graceType": "acciaccatura"
     }
     ```
-    **Output:** Shows "(3)5" for quick grace note leading to main note
-    
+   Output:
+
+   Acciaccatura: ³5 (quick grace note)
+   Appoggiatura: ₃5 (grace note that takes time)
+
+   Benefits: Cleaner, more compact, musical notation using Unicode superscripts.
+
     ### Enhanced Annotations
     Improved palm mutes and chucks with intensity:
     ```json
