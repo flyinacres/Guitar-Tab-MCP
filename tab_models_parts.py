@@ -106,6 +106,7 @@ class EnhancedTabRequestWithParts(BaseModel):
     capo: Optional[int] = Field(None, ge=0, le=12)
     tuning: Optional[List[str]] = None
     attempt: int = Field(default=1, ge=1, le=10)
+    showBeatMarkers: bool = Field(default=True, description="Show beat counting (1 & 2 & 3 & 4 &)")
     
     # Legacy format (backwards compatible)
     measures: Optional[List[Dict[str, Any]]] = Field(None, description="Legacy measures format")

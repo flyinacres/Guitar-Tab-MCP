@@ -901,18 +901,28 @@ def generate_measure_group_enhanced(
     """
     warnings = []
     num_measures = len(measures)
+
+    # Combine all layers in proper order
+    result = []
     
     logger.debug(f"Generating enhanced measure group: {num_measures} measures of {time_signature}")
     
     # Generate all display layers
     display_layers = generate_all_display_layers(measures, num_measures, time_signature, tab_data)
     
-    # Create beat markers
+    # Generate beat markers using time signature module  
     beat_line = generate_beat_markers(time_signature, num_measures)
     beat_line = " " + beat_line
-    
+
+    # Conditionally add beat markers, always add string lines
+    show_beat_markers = tab_data.get("showBeatMarkers", True)
+    if show_beat_markers:
+        result.append(beat_line)
+
     # Initialize string lines with correct template for time signature
     string_lines = []
+    result.extend(string_lines)
+ 
     content_width = get_content_width(time_signature)
     
     for string_idx in range(6):
@@ -928,17 +938,13 @@ def generate_measure_group_enhanced(
         )
         warnings.extend(measure_warnings)
     
-    # Combine all layers in proper order
-    result = []
-    
     # Add each display layer if it has content
     for layer_name in DISPLAY_LAYER_ORDER:
         layer_content = display_layers.get(layer_name)
         if layer_content and layer_content.strip():
             result.append(layer_content)
     
-    # Always add beat markers and string lines
-    result.append(beat_line)
+    # Always string lines
     result.extend(string_lines)
     
     # Add strum pattern at the bottom if present
