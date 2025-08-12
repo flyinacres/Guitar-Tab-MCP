@@ -374,6 +374,36 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     Strum patterns are optional per measure
     Each measure can have different patterns
     Length must exactly match time signature
+
+    ### Performance Instructions and Comments
+
+    Use description fields to provide playing instructions and style guidance:
+
+    ```json
+    {
+      "title": "Song Title",
+      "description": "Overall style guidance (e.g., 'Let chords ring throughout')",
+      "parts": {
+        "Intro": {
+          "description": "Specific technique for this part (e.g., 'Fingerpick arpeggios')",
+          "measures": [...]
+        },
+        "Verse": {
+          "description": "Style changes (e.g., 'Strum loosely, palm mute on downbeats')",
+          "measures": [...]
+        }
+      }
+    }
+    Common Performance Instructions:
+
+    Chord techniques: "Let chords ring", "Strum arpeggios", "Fingerpick chord notes"
+    Timing: "Chord pushed from previous measure", "Syncopated rhythm"
+    Touch: "Palm mute throughout", "Light strum", "Aggressive picking"
+    Style: "Country fingerpicking", "Classical technique", "Blues shuffle feel"
+    Arpeggio: "Inital chords in each verse measure are played as a quick arpeggio"
+
+    Note that if the Arpeggio is quite slow, the chord can be broken into individual notes and added to the tab
+
     """
     logger.info(f"Received enhanced tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")
