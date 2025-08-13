@@ -404,6 +404,43 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
 
     Note that if the Arpeggio is quite slow, the chord can be broken into individual notes and added to the tab
 
+
+    ### Lyrics Support
+
+    Lyrics can be manually added below guitar tabs. Since lyrics timing rarely matches measure boundaries, manual formatting provides the best results.
+
+    **Basic Format:**
+    Add lyrics after the tab content using natural spacing and line breaks.
+
+    **Guidelines for LLMs:**
+    - Add lyrics AFTER generating the complete tab
+    - Use manual spacing - don't force alignment with measures  
+    - Break lyrics naturally across multiple lines if needed
+    - Use part descriptions for vocal techniques ("harmony", "falsetto")
+    - Show verse/chorus structure clearly
+
+    **Example Output:**
+    Song Title
+    [complete tab here]
+    Verse 1: "First line of lyrics here
+    Second line continues here"
+    Chorus: "Chorus lyrics with natural breaks
+    Don't worry about measure alignment"
+
+    **Chord-Lyric Timing:**
+    Only attempt alignment when chords clearly match lyric syllables. Most songs work better with separate lyric sections below the tab.
+    
+    **Multiple Verses:**
+    Verse 1
+    [tab content]
+    Verse 1 lyrics...
+    Chorus 1
+    [tab content]
+    Chorus lyrics...
+    Verse 2
+    [tab content]
+    Verse 2 lyrics (different words, same chords)...
+
     """
     logger.info(f"Received enhanced tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")
