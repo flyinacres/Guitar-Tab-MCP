@@ -100,6 +100,7 @@ class EnhancedTabRequestWithParts(BaseModel):
     title: str
     description: str = ""
     artist: Optional[str] = None
+    instrument: Literal["guitar", "ukulele"] = "guitar"  
     timeSignature: Literal["4/4", "3/4", "6/8", "2/4"] = "4/4"
     tempo: Optional[int] = Field(None, ge=40, le=300)
     key: Optional[str] = None
@@ -136,6 +137,14 @@ class EnhancedTabRequestWithParts(BaseModel):
         
         return self
     
+    @field_validator('instrument')
+    @classmethod
+    def validate_instrument(cls, v):
+        """Validate instrument is supported."""
+        if v not in ["guitar", "ukulele"]:
+            raise ValueError(f"Invalid instrument '{v}'. Use 'guitar' or 'ukulele'")
+        return v
+
     @field_validator('structure')
     @classmethod 
     def validate_structure_references(cls, v, info):

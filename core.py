@@ -23,7 +23,8 @@ from typing import Dict, List, Any, Tuple, Optional
 from tab_constants import (
     StrumDirection, DynamicLevel, ArticulationMark, VALID_EMPHASIS_VALUES,
     STRUM_POSITIONS_PER_MEASURE, get_strum_positions_for_time_signature,
-    is_valid_emphasis, ERROR_MESSAGES, DisplayLayer, DISPLAY_LAYER_ORDER
+    is_valid_emphasis, ERROR_MESSAGES, DisplayLayer, DISPLAY_LAYER_ORDER, 
+    get_instrument_config, get_max_string, Instrument
 )
 from tab_models import (
     EnhancedTabRequest, EnhancedTabResponse, StrumPatternEvent,
@@ -905,6 +906,17 @@ def generate_measure_group_enhanced(
 
     # Combine all layers in proper order
     result = []
+
+    # Get instrument configuration for string count
+    instrument_str = tab_data.get("instrument", "guitar")
+    try:
+        config = get_instrument_config(instrument_str)
+        num_strings = config.strings
+        logger.debug(f"Generating tab for {config.name} ({num_strings} strings)")
+    except ValueError:
+        num_strings = 6  # Default to guitar
+        logger.warning(f"Unknown instrument {instrument_str}, defaulting to 6 strings")
+    
     
     logger.debug(f"Generating enhanced measure group: {num_measures} measures of {time_signature}")
     
@@ -922,7 +934,7 @@ def generate_measure_group_enhanced(
  
     content_width = get_content_width(time_signature)
     
-    for string_idx in range(6):
+    for string_idx in range(num_strings):
         line = "|"  # Start with opening separator
         for measure_idx in range(num_measures):
             line += "-" * content_width + "|"  # content + separator

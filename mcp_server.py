@@ -441,6 +441,136 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     [tab content]
     Verse 2 lyrics (different words, same chords)...
 
+
+    ## Ukulele Support
+
+    The tab generator now supports both guitar and ukulele with automatic string count and validation.
+
+    ### Basic Usage
+    ```json
+    {
+      "title": "Ukulele Song",
+      "instrument": "ukulele",
+      "timeSignature": "4/4",
+      "measures": [
+        {
+          "events": [
+            {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
+              {"string": 4, "fret": 0},
+              {"string": 3, "fret": 0},
+              {"string": 2, "fret": 0},
+              {"string": 1, "fret": 3}
+            ]}
+          ]
+        }
+      ]
+    }
+    Instrument Field
+    
+    "guitar" (default) - 6 strings, standard tuning
+    "ukulele" - 4 strings, high G tuning (G-C-E-A)
+    
+    Ukulele String Numbering
+
+    String 1: A (highest pitch)
+    String 2: E
+    String 3: C
+    String 4: G (lowest pitch)
+    
+    Common Ukulele Chords
+    json// C major - easiest ukulele chord
+    {
+      "type": "chord",
+      "chordName": "C",
+      "frets": [
+        {"string": 4, "fret": 0},
+        {"string": 3, "fret": 0},
+        {"string": 2, "fret": 0},
+        {"string": 1, "fret": 3}
+      ]
+    }
+
+    // G major
+    {
+      "type": "chord", 
+      "chordName": "G",
+      "frets": [
+        {"string": 4, "fret": 3},
+        {"string": 3, "fret": 2},
+        {"string": 2, "fret": 0},
+        {"string": 1, "fret": 2}
+      ]
+    }
+
+    // A minor
+    {
+      "type": "chord",
+      "chordName": "Am", 
+      "frets": [
+        {"string": 4, "fret": 2},
+        {"string": 3, "fret": 0},
+        {"string": 2, "fret": 0},
+        {"string": 1, "fret": 0}
+      ]
+    }
+
+    // F major
+    {
+      "type": "chord",
+      "chordName": "F",
+      "frets": [
+        {"string": 4, "fret": 2},
+        {"string": 3, "fret": 0}, 
+        {"string": 2, "fret": 1},
+        {"string": 1, "fret": 0}
+      ]
+    }
+    Ukulele Techniques
+    All guitar techniques work on ukulele:
+    json// Hammer-on
+    {"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 0, "toFret": 2}
+    
+    // Slide
+    {"type": "slide", "string": 2, "startBeat": 2.0, "fromFret": 2, "toFret": 4, "direction": "up"}
+    
+    // Bend (less common on ukulele)
+    {"type": "bend", "string": 1, "beat": 3.0, "fret": 3, "semitones": 0.5}
+    Ukulele Strum Patterns
+    Standard strum patterns work perfectly:
+    json{
+      "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+      "events": [...]
+    }
+    Validation
+
+    String range: 1-4 for ukulele (vs 1-6 for guitar)
+    Fret range: 0-24 (same as guitar)
+    Automatic validation: Invalid strings will be caught and reported
+    
+    Example Output
+    # Ukulele Song
+    **Time Signature:** 4/4
+
+      C       G       Am      F
+      1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 &
+    |-3-------2-------0-------0-------| ← A string
+    |-0-------0-------0-------1-------| ← E string  
+    |-0-------2-------0-------0-------| ← C string
+    |-0-------3-------2-------2-------| ← G string
+      D   U   D U D U D   U   D U D U
+    Performance Notes for Ukulele
+    Use description fields for ukulele-specific techniques:
+
+    "description": "Light fingerpicking, let strings ring"
+    "description": "Hawaiian-style slack key feel"
+    "description": "Percussive chuck on off-beats"
+
+    Backwards Compatibility
+
+    Omitting "instrument" defaults to "guitar"
+    All existing guitar tabs continue to work unchanged
+    Parts system, strum patterns, and all advanced features work on both instruments
+
     """
     logger.info(f"Received enhanced tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")

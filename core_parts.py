@@ -11,6 +11,7 @@ import sys
 import json
 import logging
 from typing import Dict, List, Any, Tuple, Optional
+from tab_constants import get_instrument_config, get_max_string, Instrument
 
 # Import existing functionality
 from tab_constants import (
@@ -60,38 +61,61 @@ logger = logging.getLogger(__name__)
 # Enhanced Validation Pipeline with Parts Support
 # ============================================================================
 
-def validate_tab_data_with_parts(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Enhanced validation pipeline supporting both legacy and parts format."""
-    attempt = data.get('attempt', 1)
-    logger.debug(f"Starting validation with parts support for attempt {attempt}")
+
+# Add this new validation function:
+def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate all events for the specified instrument.
+    
+    Checks string numbers and fret values against instrument limits.
+    """
+    instrument_str = data.get("instrument", "guitar")
     
     try:
-        # Try to parse as enhanced request with parts
-        request = EnhancedTabRequestWithParts(**data)
-        logger.info(f"Parsed as parts request: '{request.title}'")
-        
-        # Validate parts system if used
-        if request.parts and request.structure:
-            logger.debug("Validating parts system")
-            parts_result = validate_parts_system(request)
-            if parts_result["isError"]:
-                logger.warning(f"Parts validation failed: {parts_result['message']}")
-                return parts_result
-            logger.info("Parts system validation passed")
-        
-        # Convert to legacy format for existing validation
-        legacy_data = convert_parts_to_legacy_format(request)
-        logger.debug("Converted to legacy format for validation")
-        
-    except Exception as e:
-        logger.warning(f"Parts parsing failed, trying legacy: {e}")
-        legacy_data = data
+        config = get_instrument_config(instrument_str)
+        logger.debug(f"Validating events for {config.name} ({config.strings} strings)")
+    except ValueError as e:
+        return {
+            "isError": True,
+            "errorType": "validation_error",
+            "message": f"Invalid instrument: {instrument_str}",
+            "suggestion": "Use 'guitar' or 'ukulele'"
+        }
     
-    # Run existing validation pipeline
-    return validate_tab_data_legacy(legacy_data)
+    measures = data.get("measures", [])
+    
+    for measure_idx, measure in enumerate(measures, 1):
+        for event_idx, event in enumerate(measure.get("events", []), 1):
+            # Validate string numbers
+            string_num = event.get("string")
+            if string_num is not None:
+                if not config.validate_string(string_num):
+                    return {
+                        "isError": True,
+                        "errorType": "validation_error",
+                        "measure": measure_idx,
+                        "message": f"Invalid string {string_num} for {config.name}",
+                        "suggestion": f"Use strings 1-{config.strings} for {config.name}"
+                    }
+            
+            # Validate chord frets
+            if event.get("type") == "chord":
+                for fret_info in event.get("frets", []):
+                    chord_string = fret_info.get("string")
+                    if chord_string and not config.validate_string(chord_string):
+                        return {
+                            "isError": True,
+                            "errorType": "validation_error",
+                            "measure": measure_idx,
+                            "message": f"Invalid string {chord_string} in chord for {config.name}",
+                            "suggestion": f"Use strings 1-{config.strings} for {config.name}"
+                        }
+    
+    logger.debug(f"All events validated for {config.name}")
+    return {"isError": False}
 
-def validate_tab_data_legacy(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Original validation pipeline for legacy measures format."""
+def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """validation pipeline for legacy measures format."""
     attempt = data.get('attempt', 1)
     logger.debug(f"Running legacy validation for attempt {attempt}")
     
@@ -119,7 +143,7 @@ def validate_tab_data_legacy(data: Dict[str, Any]) -> Dict[str, Any]:
     emphasis_result = validate_emphasis_markings(data)
     if emphasis_result["isError"]:
         return emphasis_result
-
+    
     # Stage 6: Measure strum pattern validation
     measures = data.get("measures", [])
     time_sig = data.get("timeSignature", "4/4")
@@ -128,8 +152,15 @@ def validate_tab_data_legacy(data: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
         return measure_strum_result
     
+    # Stage 7: NEW - Instrument validation
+    instrument_result = validate_instrument_events(data)
+    if instrument_result["isError"]:
+        logger.warning(f"Instrument validation failed: {instrument_result['message']}")
+        return instrument_result
+    
     logger.info("All validation stages passed")
     return {"isError": False}
+
 
 # ============================================================================
 # Enhanced Tab Generation with Parts Support
@@ -422,9 +453,6 @@ def create_legacy_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, A
 # Backwards Compatibility Wrappers
 # ============================================================================
 
-def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Main validation entry point with parts support."""
-    return validate_tab_data_with_parts(data)
 
 def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
     """Main tab generation entry point with parts support."""

@@ -32,6 +32,48 @@ STRUM_POSITIONS_PER_MEASURE = {
     "6/8": 6,  # 1.0, 1.33, 1.67, 2.0, 2.33, 2.67 (compound time)
 }
 
+class Instrument(Enum):
+    """Supported string instruments."""
+    GUITAR = "guitar"
+    UKULELE = "ukulele"
+
+class InstrumentConfig:
+    """Configuration for string instruments."""
+    
+    def __init__(self, name: str, strings: int, tuning: List[str], max_fret: int = 24):
+        self.name = name
+        self.strings = strings
+        self.tuning = tuning
+        self.max_fret = max_fret
+    
+    def validate_string(self, string_num: int) -> bool:
+        return 1 <= string_num <= self.strings
+
+# Instrument configurations
+INSTRUMENT_CONFIGS = {
+    Instrument.GUITAR: InstrumentConfig(
+        name="Guitar",
+        strings=6,
+        tuning=["E", "A", "D", "G", "B", "E"]
+    ),
+    Instrument.UKULELE: InstrumentConfig(
+        name="Ukulele",
+        strings=4, 
+        tuning=["G", "C", "E", "A"]
+    )
+}
+
+def get_instrument_config(instrument_str: str) -> InstrumentConfig:
+    """Get configuration for instrument string."""
+    instrument = Instrument(instrument_str)
+    return INSTRUMENT_CONFIGS[instrument]
+
+# Update existing constants to be instrument-aware
+def get_max_string(instrument_str: str = "guitar") -> int:
+    """Get maximum string number for instrument."""
+    config = get_instrument_config(instrument_str)
+    return config.strings
+
 # ============================================================================
 # Dynamic and Emphasis Constants
 # ============================================================================
