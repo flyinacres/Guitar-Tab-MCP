@@ -326,7 +326,7 @@ def validate_strum_patterns(data: Dict[str, Any]) -> Dict[str, Any]:
                         time_sig=time_sig, 
                         expected=expected_length
                     ),
-                    "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}"
+                    "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
                 }
             
             # Validate pattern values
@@ -1150,18 +1150,27 @@ def process_strum_pattern(
     
     logger.debug(f"Processing strum pattern: {len(pattern)} positions, {measures_spanned} measures")
     
-    # Calculate which part of the pattern applies to this measure
-    pattern_start_measure = current_measure  # Simplified - assumes pattern starts at current measure
-    
+    # For now, assume the pattern starts at the beginning of the measure group
+    pattern_start_measure = 0  # Relative to current measure group
+
+    # Check if current measure is covered by this pattern
     if current_measure < pattern_start_measure or current_measure >= pattern_start_measure + measures_spanned:
-        return  # This measure is not covered by this pattern
-    
+       logger.debug(f"Measure {current_measure} not covered by pattern (starts at {pattern_start_measure}, spans {measures_spanned})")
+       return
+
     measure_offset_in_pattern = current_measure - pattern_start_measure
     pattern_start_idx = measure_offset_in_pattern * positions_per_measure
     pattern_end_idx = pattern_start_idx + positions_per_measure
     
     # Extract the pattern slice for this measure
     measure_pattern = pattern[pattern_start_idx:pattern_end_idx]
+
+   # Validate pattern slice bounds
+    if pattern_start_idx >= len(pattern):
+        logger.warning(f"Pattern start index {pattern_start_idx} exceeds pattern length {len(pattern)}")
+        return
+
+    logger.debug(f"Measure {current_measure}: using pattern slice [{pattern_start_idx}:{pattern_end_idx}] = {measure_pattern}") 
     
     # Place each strum direction at its corresponding beat position
     for i, direction in enumerate(measure_pattern):
@@ -1174,6 +1183,8 @@ def process_strum_pattern(
                 if char_position < total_width:
                     strum_chars[char_position] = direction
                     logger.debug(f"Placed strum '{direction}' at position {char_position} for beat {beat}")
+                else:
+                    logger.warning(f"Character position {char_position} exceeds total width {total_width}")
 
 def place_measure_events_enhanced(
     measure: Dict[str, Any], 
