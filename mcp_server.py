@@ -94,7 +94,30 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     }
     ```
     **Output:** Shows "D U  D U  D U" below the tab content
-    
+
+    STRUM PATTERN GUIDELINES FOR LLM USAGE:
+
+    Per-Measure Strum Patterns (RECOMMENDED APPROACH):
+    - Use "strumPattern" field at measure level, not as events
+    - Each measure gets exactly 8 positions for 4/4 time: ["D","","U","","D","U","D","U"]
+    - Position mapping: [1, &, 2, &, 3, &, 4, &]
+    - Valid values: "D" (down), "U" (up), "" (no strum/silence)
+
+    Common LLM Mistakes to Avoid:
+    - Don't use "X" in strum patterns - use chuck events + empty strum position
+    - Map musical patterns to beat grid: "D D DU" = ["D","","D","","D","U","",""]
+    - "DU" always means down on one beat, up on the next (&) beat
+    - Empty positions ("") are required for proper spacing
+
+    Example Correct Usage:
+    {
+      "strumPattern": ["", "", "D", "", "D", "", "D", "U"],  // Chuck on 1, strums on 2,3,4&
+      "events": [
+        {"type": "chuck", "beat": 1.0},
+        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [...]}
+      ]
+    }
+
     ### Dynamics and Emphasis
     Add musical dynamics to any note or chord:
     ```json
@@ -565,11 +588,27 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     "description": "Hawaiian-style slack key feel"
     "description": "Percussive chuck on off-beats"
 
+    CHORD PLACEMENT TIMING:
+    - Single chord measures: Place chord on beat 1.0
+    - Split chord measures (like "Em D/F#"): Place first chord on beat 1.0, second on beat 3.0
+    - Chuck events: Always use beat 1.0 with empty strum position at that location
+
+    COMMON PATTERNS:
+    - All down strums: ["D","","D","","D","","D",""] 
+    - Down-up basic: ["D","","D","U","D","","D","U"]
+    - Chuck + strums: ["","","D","","D","","D","U"] + chuck event on beat 1.0
+
     Backwards Compatibility
 
     Omitting "instrument" defaults to "guitar"
     All existing guitar tabs continue to work unchanged
     Parts system, strum patterns, and all advanced features work on both instruments
+
+    LLM Result Interpretation:
+    - Raw content string is authoritative - don't assume display errors
+    - Check warnings array for validation issues
+    - No warnings + success=true = output is correct
+    
 
     """
     logger.info(f"Received enhanced tab generation request")
