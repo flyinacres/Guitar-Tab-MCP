@@ -118,6 +118,23 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
       ]
     }
 
+
+    CHORD PLACEMENT AND STRUM PATTERN ALIGNMENT:
+
+    Musical Theory Rules (CRITICAL):
+    - Assume D (down strums) occur on numbered beats: 1, 2, 3, 4 unless the chord pattern clearly states otherwise (such as all down strums for all beats)
+    - Assume U (up strums) occur on & beats: 1&, 2&, 3&, 4&, unless otherwise specified
+    - Chords are often placed on downbeats (numbered beats) unless specifically noted
+    - Never place chords on & beats without explicit instruction
+
+    - If the measure has multiple chords you may need to ask to understand where to place the chords in the measure. Two chords often (but not always) split a measure evenly.
+
+    Common LLM Errors to Avoid:
+    - Always verify chord placement matches the intended strum positions
+
+    Verification Steps:
+    1. Check that chord placement beats match the intended strum positions
+
     ### Dynamics and Emphasis
     Add musical dynamics to any note or chord:
     ```json
