@@ -110,7 +110,14 @@ class TabTestFramework:
         
         success, output, error = self.run_mcp_test(test_data)
         
-        if not success:
+        # Some tests are designed to fail
+        if test_data["shouldFail"]:
+            # it was supposed to fail, but it did not!
+            if success:
+                logger.error(f"Test {test_name} was designed to fail, but passed")
+                self.test_results.append({"name": test_name, "status": "FAILED", "error": "Error condition passed"})
+                return False
+        elif not success:
             logger.error(f"Test {test_name} failed: {error}")
             self.test_results.append({"name": test_name, "status": "FAILED", "error": error})
             return False
@@ -167,6 +174,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
     return {
         "basic_chord": {
             "title": "Basic Chord Test",
+            "shouldFail": False,
             "timeSignature": "4/4",
             "measures": [
                 {
@@ -182,6 +190,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "chuck_and_strum": {
             "title": "Chuck with Strum Pattern",
+            "shouldFail": False,
             "timeSignature": "4/4", 
             "measures": [
                 {
@@ -198,6 +207,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "two_chord_measure": {
             "title": "Two Chord Measure",
+            "shouldFail": False,
             "timeSignature": "4/4",
             "measures": [
                 {
@@ -217,6 +227,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "three_chord_measure": {
             "title": "Three Chord Measure",
+            "shouldFail": False,
             "timeSignature": "4/4",
             "measures": [
                 {
@@ -240,6 +251,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "multiple_measures": {
             "title": "Multiple Measures Test",
+            "shouldFail": False,
             "timeSignature": "4/4",
             "measures": [
                 {
@@ -293,6 +305,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "ukulele_test": {
             "title": "Ukulele Test",
+            "shouldFail": False,
             "instrument": "ukulele",
             "timeSignature": "4/4",
             "measures": [
@@ -310,6 +323,7 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
         
         "guitar_techniques": {
             "title": "Guitar Techniques Test",
+            "shouldFail": False,
             "timeSignature": "4/4",
             "measures": [
                 {
@@ -321,8 +335,67 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
                     ]
                 }
             ]
+        },
+
+        "invalid_beat_error": {
+            "title": "Invalid Beat Test",
+            "shouldFail": True,
+            "timeSignature": "4/4",
+            "measures": [
+                {
+                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                    "events": [
+                        {"type": "chord", "beat": 4.7, "chordName": "G", "frets": [...]}  # Invalid beat
+                    ]
+                }
+            ]
+        },
+
+        "multi_digit_frets": {
+            "title": "Multi-Digit Frets Test", 
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "measures": [
+                {
+                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                    "events": [
+                        {"type": "chord", "beat": 1.0, "chordName": "High Frets", "frets": [
+                            {"string": 1, "fret": 12}, {"string": 2, "fret": 10}, {"string": 3, "fret": 15}
+                        ]}
+                    ]
+                }
+            ]
+        },
+
+        "waltz_time": {
+            "title": "3/4 Waltz Test",
+            "shouldFail": False,
+            "timeSignature": "3/4", 
+            "measures": [
+                {
+                    "strumPattern": ["D", "", "D", "", "D", "U"],  # 6 positions for 3/4
+                    "events": [
+                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [ {"string": 4, "fret": 2}, {"string": 5, "fret": 2}]}
+                    ]
+                }
+            ]
+        },
+
+        "advanced_techniques": {
+            "title": "Advanced Techniques Test",
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "measures": [
+                {
+                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                    "events": [
+                        {"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": True},
+                        {"type": "slide", "string": 2, "startBeat": 2.0, "fromFret": 5, "toFret": 8, "direction": "up"}
+                    ]
+                }
+            ]
         }
-    }
+   }
 
 def get_smoke_tests() -> Dict[str, Dict[str, Any]]:
     """Essential smoke tests that must always pass."""
