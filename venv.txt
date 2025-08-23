@@ -1,0 +1,35 @@
+# ===========================================
+# Daily Usage on Windows
+# ===========================================
+
+# Every time you work on the project:
+cd C:\path\to\Guitar-Tab-MCP
+guitar_tab_env\Scripts\activate
+
+# Run your code:
+python cli.py examples\test.json
+python mcp_server_parts.py
+
+# When finished:
+deactivate
+
+
+# ===========================================
+# Windows-Specific Notes
+# ===========================================
+
+# File paths use backslashes (\) on Windows
+# The venv activation script is in Scripts\ not bin/
+# Use "where" instead of "which" to find Python location
+# Python might be "python" or "py" depending on your installation
+
+# ===========================================
+# Moving to Mac Later
+# ===========================================
+
+# The venv is NOT portable between platforms
+# When you move to Mac:
+# 1. Copy your code files (not the guitar_tab_env folder)
+# 2. Create new venv on Mac: python3 -m venv guitar_tab_env
+# 3. Activate on Mac: source guitar_tab_env/bin/activate
+# 4. Install from requirements: pip install -r requirements.txt
