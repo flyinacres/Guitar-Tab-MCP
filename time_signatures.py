@@ -183,7 +183,7 @@ def calculate_char_position(beat: float, measure_offset: int, time_signature: st
     Calculate character position for a beat in any time signature.
     
     This is the core function that maps musical time to visual position
-    in the ASCII tablature format.
+    in the UTF-8 tablature format.
     
     Args:
         beat: Beat position within the measure (e.g., 1.0, 1.5)

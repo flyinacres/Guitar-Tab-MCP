@@ -4,7 +4,7 @@ Guitar Tab Generator - Enhanced Core Implementation
 ==================================================
 
 Enhanced core functionality for converting structured JSON guitar tab specifications
-into properly aligned ASCII tablature with support for strum patterns, dynamics,
+into properly aligned UTF-8 tablature with support for strum patterns, dynamics,
 and emphasis markings.
 
 Key Enhancements:
@@ -855,7 +855,7 @@ def generate_palm_mute_notation(duration: float) -> str:
     how long to maintain the palm mute technique.
     
     The dash calculation uses approximately 2 characters per beat to provide
-    reasonable visual representation within the ASCII tab format constraints.
+    reasonable visual representation within the UTF-8 tab format constraints.
     
     Args:
         duration: Duration in beats (e.g., 2.0 = 2 beats, 1.5 = beat and a half)
@@ -1321,7 +1321,7 @@ def place_event_on_tab_enhanced(
     Enhanced version of place_event_on_tab with emphasis support.
     
     Places musical events on tab lines and handles emphasis markings
-    by adjusting the notation (when possible in ASCII format).
+    by adjusting the notation (when possible in UTF-8 format).
     """
     warnings = []
     event_type = event.get("type")
@@ -1463,7 +1463,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
     """
     Place individual event on the appropriate tab line.
     
-    This is the core algorithm that converts musical events to ASCII characters.
+    This is the core algorithm that converts musical events to UTF-8 characters.
     Key challenges:
     - Multi-digit frets require multiple character positions
     - Techniques like "10h12" can be 5+ characters long

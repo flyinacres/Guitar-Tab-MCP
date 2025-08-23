@@ -68,9 +68,9 @@ mcp = FastMCP("Enhanced Guitar Tab Generator")
 @mcp.tool()
 def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     """
-    Generate ASCII guitar tablature from structured JSON input with enhanced features.
+    Generate UTF-8 guitar tablature from structured JSON input with enhanced features.
     
-    Converts guitar tab specifications into properly formatted ASCII tablature with 
+    Converts guitar tab specifications into properly formatted UTF-8 tablature with 
     comprehensive support for musical notation, dynamics, strum patterns, and 
     advanced guitar techniques. Provides structured error messages for LLM correction 
     when input is invalid.
@@ -372,7 +372,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     5. **Genre-Specific Notation**: Palm mutes for metal, chucks for reggae, dynamics for classical
     
     The enhanced system maintains full compatibility while adding professional-level 
-    musical notation capabilities to ASCII guitar tablature.
+    musical notation capabilities to UTF-8 guitar tablature.
 
     ## Strum Patterns (Measure Level)
 

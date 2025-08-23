@@ -264,7 +264,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     developers who may not be familiar with the tab format.
     """
     parser = argparse.ArgumentParser(
-        description="Generate ASCII guitar tablature from structured JSON input",
+        description="Generate UTF-8 guitar tablature from structured JSON input",
         epilog="""
 Examples:
   %(prog)s input.json                    # Output tab to console
