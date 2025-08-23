@@ -1,6 +1,14 @@
 # Two Chord Measure
 **Time Signature:** 4/4
 
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
   Em      D/F#
   1 & 2 & 3 & 4 &  
 |---------2-------|
@@ -10,3 +18,4 @@
 |-2---------------|
 |---------2-------|
   D   D   D U D U
+

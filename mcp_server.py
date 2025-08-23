@@ -41,7 +41,7 @@ from fastmcp import FastMCP
 from pydantic import BaseModel
 
 # Import  functionality
-from core_parts import (
+from core import (
     validate_tab_data, generate_tab_output, 
     check_attempt_limit as check_attempt_limit
 )
@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 #  MCP Server Setup
 # ============================================================================
 
-# Initialize FastMCP server with  metadata
+# Initialize FastMCP server
 mcp = FastMCP(" Guitar Tab Generator")
 
 @mcp.tool()
@@ -80,7 +80,7 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
         tab_data: Complete guitar tab specification with title, measures, and events
         
     Returns:
-        TabResponse with generated tab content, warnings, and metadata
+        TabResponse with generated tab content, warnings
         
     ##  Features (NEW)
     
@@ -666,16 +666,11 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
         # Generate  tab with all new features
         logger.debug("Starting  tab generation")
         tab_output, warnings = generate_tab_output(data_dict)
-        
-        # Create  metadata
-        metadata = create_tab_metadata(data_dict, warnings)
-        logger.info(f" tab generated successfully with {len(warnings)} warnings")
-                                                  
+                                                          
         return TabResponse(
             success=True, 
             content=tab_output, 
-            warnings=warnings,
-            metadata=metadata
+            warnings=warnings
         )
     
     except json.JSONDecodeError as e:
@@ -702,90 +697,6 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
             }
         )
 
-def create_tab_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Create  metadata about the generated tab.
-    
-    Args:
-        data_dict: Original tab data
-        warnings: List of warnings generated during tab creation
-        
-    Returns:
-        Metadata dictionary with useful information for LLMs
-    """
-    measures = data_dict.get("measures", [])
-    total_measures = len(measures)
-    
-    # Analyze features used
-    features_used = set()
-    has_strum_pattern = False
-    has_dynamics = False
-    has_grace_notes = False
-    complexity_factors = []
-    
-    for measure in measures:
-        for event in measure.get("events", []):
-            event_type = event.get("type")
-            features_used.add(event_type)
-            
-            if event_type == "strumPattern":
-                has_strum_pattern = True
-            elif event.get("emphasis"):
-                has_dynamics = True
-            elif event_type == "graceNote":
-                has_grace_notes = True
-            elif event_type in ["bend", "slide", "hammerOn", "pullOff"]:
-                complexity_factors.append("advanced_techniques")
-            elif event_type == "chord" and len(event.get("frets", [])) > 4:
-                complexity_factors.append("complex_chords")
-    
-    # Determine complexity level
-    complexity_score = 0
-    if has_strum_pattern:
-        complexity_score += 1
-    if has_dynamics:
-        complexity_score += 1
-    if has_grace_notes:
-        complexity_score += 2
-    if len(complexity_factors) > 2:
-        complexity_score += 1
-    
-    if complexity_score >= 4:
-        complexity = "advanced"
-    elif complexity_score >= 2:
-        complexity = "intermediate"
-    else:
-        complexity = "beginner"
-    
-    # Count warning types
-    warning_types = {}
-    for warning in warnings:
-        warning_type = warning.get("warningType", "unknown")
-        warning_types[warning_type] = warning_types.get(warning_type, 0) + 1
-    
-    metadata = {
-        "totalMeasures": total_measures,
-        "timeSignature": data_dict.get("timeSignature", "4/4"),
-        "hasStrumPattern": has_strum_pattern,
-        "hasDynamics": has_dynamics,
-        "hasGraceNotes": has_grace_notes,
-        "featuresUsed": list(features_used),
-        "complexity": complexity,
-        "warningCount": len(warnings),
-        "warningTypes": warning_types,
-        "estimatedPlayTime": f"{total_measures * 4}+ seconds",  # Rough estimate
-        "recommendedSkillLevel": complexity,
-        "musicalElements": {
-            "chords": "chord" in features_used,
-            "singleNotes": "note" in features_used,
-            "techniques": bool(set(features_used) & {"hammerOn", "pullOff", "slide", "bend"}),
-            "percussive": bool(set(features_used) & {"chuck", "palmMute"}),
-            "ornaments": "graceNote" in features_used
-        }
-    }
-    
-    logger.debug(f"Created metadata: complexity={complexity}, features={len(features_used)}")
-    return metadata
 
 # ============================================================================
 #  MCP Server Startup

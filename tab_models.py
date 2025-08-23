@@ -226,7 +226,6 @@ class TabResponse(BaseModel):
     content: str = ""
     error: Optional[Dict[str, Any]] = None
     warnings: List[Dict[str, Any]] = []
-    metadata: Optional[Dict[str, Any]] = None  # Additional info about the tab
     
     model_config = {
         "json_schema_extra": {
@@ -240,13 +239,7 @@ class TabResponse(BaseModel):
                         "beat": 2.0,
                         "message": "Complex strum pattern may require practice"
                     }
-                ],
-                "metadata": {
-                    "totalMeasures": 4,
-                    "hasStrumPattern": True,
-                    "hasDynamics": True,
-                    "complexity": "intermediate"
-                }
+                ]
             }
         }
     }

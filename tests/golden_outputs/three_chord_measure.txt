@@ -1,6 +1,14 @@
 # Three Chord Measure
 **Time Signature:** 4/4
 
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
   G       Am  C/B
   1 & 2 & 3 & 4 &  
 |-3-----------0---|
@@ -10,3 +18,4 @@
 |-2-------0---2---|
 |-3---------------|
   D   D   D U D U
+

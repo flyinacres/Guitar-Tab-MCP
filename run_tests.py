@@ -53,7 +53,7 @@ class TabTestFramework:
         """
         try:
             # Import and use the MCP functionality directly
-            from core_parts import validate_tab_data, generate_tab_output
+            from core import validate_tab_data, generate_tab_output
             
             # Validate input
             validation_result = validate_tab_data(input_data)
@@ -174,138 +174,163 @@ class TabTestFramework:
 # ============================================================================
 
 def get_test_suite() -> Dict[str, Dict[str, Any]]:
-    """Define the complete test suite with all critical test cases."""
+    """Test suite."""
     
     return {
         "basic_chord": {
             "title": "Basic Chord Test",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                        ]}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
         
         "chuck_and_strum": {
             "title": "Chuck with Strum Pattern",
             "shouldFail": False,
-            "timeSignature": "4/4", 
-            "measures": [
-                {
-                    "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                        ]},
-                        {"type": "chuck", "beat": 1.0}
+            "timeSignature": "4/4",
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
+                                ]},
+                                {"type": "chuck", "beat": 1.0}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
         
         "two_chord_measure": {
             "title": "Two Chord Measure",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                        ]},
-                        {"type": "chord", "beat": 3.0, "chordName": "D/F#", "frets": [
-                            {"string": 6, "fret": 2}, {"string": 4, "fret": 0}, 
-                            {"string": 3, "fret": 2}, {"string": 2, "fret": 3}, {"string": 1, "fret": 2}
-                        ]}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
+                                ]},
+                                {"type": "chord", "beat": 3.0, "chordName": "D/F#", "frets": [
+                                    {"string": 6, "fret": 2}, {"string": 4, "fret": 0}, 
+                                    {"string": 3, "fret": 2}, {"string": 2, "fret": 3}, {"string": 1, "fret": 2}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
         
         "three_chord_measure": {
             "title": "Three Chord Measure",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                        ]},
-                        {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
-                            {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
-                            {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
-                        ]},
-                        {"type": "chord", "beat": 4.0, "chordName": "C/B", "frets": [
-                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}, 
-                            {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
-                        ]}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]},
+                                {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
+                                    {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
+                                ]},
+                                {"type": "chord", "beat": 4.0, "chordName": "C/B", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
         
         "multiple_measures": {
             "title": "Multiple Measures Test",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                        ]}
-                    ]
-                },
-                {
-                    "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
-                            {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, 
-                            {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
-                        ]},
-                        {"type": "chuck", "beat": 1.0}
-                    ]
-                },
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                        ]},
-                        {"type": "chord", "beat": 3.0, "chordName": "D", "frets": [
-                            {"string": 4, "fret": 0}, {"string": 3, "fret": 2}, 
-                            {"string": 2, "fret": 3}, {"string": 1, "fret": 2}
-                        ]}
-                    ]
-                },
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                        ]},
-                        {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
-                            {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
-                            {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
-                        ]},
-                        {"type": "chord", "beat": 4.0, "chordName": "C", "frets": [
-                            {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, 
-                            {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
-                        ]}
+            "parts": {
+                "Section": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]}
+                            ]
+                        },
+                        {
+                            "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
+                                    {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
+                                ]},
+                                {"type": "chuck", "beat": 1.0}
+                            ]
+                        },
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
+                                ]},
+                                {"type": "chord", "beat": 3.0, "chordName": "D", "frets": [
+                                    {"string": 4, "fret": 0}, {"string": 3, "fret": 2}, 
+                                    {"string": 2, "fret": 3}, {"string": 1, "fret": 2}
+                                ]}
+                            ]
+                        },
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]},
+                                {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
+                                    {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
+                                ]},
+                                {"type": "chord", "beat": 4.0, "chordName": "C", "frets": [
+                                    {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Section"]
         },
         
         "ukulele_test": {
@@ -313,94 +338,163 @@ def get_test_suite() -> Dict[str, Dict[str, Any]]:
             "shouldFail": False,
             "instrument": "ukulele",
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
-                            {"string": 4, "fret": 0}, {"string": 3, "fret": 0}, 
-                            {"string": 2, "fret": 0}, {"string": 1, "fret": 3}
-                        ]}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
+                                    {"string": 4, "fret": 0}, {"string": 3, "fret": 0}, 
+                                    {"string": 2, "fret": 0}, {"string": 1, "fret": 3}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
         
         "guitar_techniques": {
             "title": "Guitar Techniques Test",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "note", "string": 1, "beat": 1.0, "fret": 3},
-                        {"type": "hammerOn", "string": 1, "startBeat": 2.0, "fromFret": 3, "toFret": 5},
-                        {"type": "bend", "string": 1, "beat": 3.0, "fret": 5, "semitones": 1.0, "vibrato": True}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "note", "string": 1, "beat": 1.0, "fret": 3},
+                                {"type": "hammerOn", "string": 1, "startBeat": 2.0, "fromFret": 3, "toFret": 5},
+                                {"type": "bend", "string": 1, "beat": 3.0, "fret": 5, "semitones": 1.0, "vibrato": True}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
 
         "invalid_beat_error": {
             "title": "Invalid Beat Test",
             "shouldFail": True,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 4.7, "chordName": "G", "frets": [...]}  # Invalid beat
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 4.7, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
 
         "multi_digit_frets": {
             "title": "Multi-Digit Frets Test", 
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "High Frets", "frets": [
-                            {"string": 1, "fret": 12}, {"string": 2, "fret": 10}, {"string": 3, "fret": 15}
-                        ]}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "High Frets", "frets": [
+                                    {"string": 1, "fret": 12}, {"string": 2, "fret": 10}, {"string": 3, "fret": 15}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
 
         "waltz_time": {
             "title": "3/4 Waltz Test",
             "shouldFail": False,
-            "timeSignature": "3/4", 
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U"],  # 6 positions for 3/4
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [ {"string": 4, "fret": 2}, {"string": 5, "fret": 2}]}
+            "timeSignature": "3/4",
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                                    {"string": 4, "fret": 2}, {"string": 5, "fret": 2}
+                                ]}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
         },
 
         "advanced_techniques": {
             "title": "Advanced Techniques Test",
             "shouldFail": False,
             "timeSignature": "4/4",
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                    "events": [
-                        {"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": True},
-                        {"type": "slide", "string": 2, "startBeat": 2.0, "fromFret": 5, "toFret": 8, "direction": "up"}
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": True},
+                                {"type": "slide", "string": 2, "startBeat": 2.0, "fromFret": 5, "toFret": 8, "direction": "up"}
+                            ]
+                        }
                     ]
                 }
-            ]
+            },
+            "structure": ["Main"]
+        },
+
+        # New parts-specific tests
+        "song_structure_test": {
+            "title": "Song Structure Test",
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "parts": {
+                "Verse": {
+                    "description": "Main verse section",
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]}
+                            ]
+                        }
+                    ]
+                },
+                "Chorus": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
+                                    {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 2, "fret": 1}
+                                ]}
+                            ]
+                        }
+                    ]
+                }
+            },
+            "structure": ["Verse", "Chorus", "Verse", "Chorus"]
         }
-   }
+    }
 
 def get_smoke_tests() -> Dict[str, Dict[str, Any]]:
     """Essential smoke tests that must always pass."""
@@ -462,7 +556,7 @@ def validate_project_structure():
     """Validate that all required files exist."""
     project_root = Path(__file__).parent
     required_files = [
-        "core_parts.py",
+        "core.py",
         "mcp_server_parts.py", 
         "cli.py",
         "tab_constants.py",

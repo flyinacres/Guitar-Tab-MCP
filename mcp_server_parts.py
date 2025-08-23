@@ -15,7 +15,6 @@ New Parts System Features:
 - Automatic numbering for repeated parts
 - Song structure with part ordering
 - Part-specific tempo/key/time signature changes
--  metadata with song structure analysis
 
 Usage:
     python mcp_server_parts.py
@@ -41,8 +40,7 @@ from pydantic import BaseModel
 # Import  functionality with parts support
 from core_with_parts import (
     validate_tab_data, generate_tab_output, 
-    check_attempt_limit as check_attempt_limit,
-    create_tab_metadata
+    check_attempt_limit as check_attempt_limit
 )
 from tab_models import (
     TabRequest, TabResponse, 
@@ -65,7 +63,7 @@ logger = logging.getLogger(__name__)
 #  MCP Server Setup with Parts System
 # ============================================================================
 
-# Initialize FastMCP server with  metadata
+# Initialize FastMCP server
 mcp = FastMCP(" Guitar Tab Generator with Parts System")
 
 @mcp.tool()
@@ -81,7 +79,7 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
         tab_data: Complete guitar tab specification with title, parts/measures, and structure
         
     Returns:
-        TabResponse with generated tab content, warnings, and metadata
+        TabResponse with generated tab content, warnings
         
     
     ## QUICK SMOKE TESTS (Gold Standard)
@@ -480,27 +478,11 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
         logger.debug("Starting  tab generation with parts support")
         tab_output, warnings = generate_tab_output(data_dict)
         
-        # Create  metadata with parts information
-        metadata = create_tab_metadata(data_dict, warnings)
-        logger.info(f" tab with parts generated successfully with {len(warnings)} warnings")
-        
-        # Add format information to metadata
-        metadata["inputFormat"] = format_type
-        if format_type == "parts":
-            # Add parts-specific metadata
-            try:
-                request = TabRequest(**data_dict)
-                if request.parts and request.structure:
-                    structure_analysis = analyze_song_structure(request)
-                    metadata["songStructureAnalysis"] = structure_analysis
-            except Exception as e:
-                logger.debug(f"Could not add structure analysis: {e}")
-                                                  
+
         return TabResponse(
             success=True, 
             content=tab_output, 
-            warnings=warnings,
-            metadata=metadata
+            warnings=warnings
         )
     
     except json.JSONDecodeError as e:
@@ -588,52 +570,6 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
             "error": f"Analysis error: {str(e)}"
         }
 
-def create_metadata_with_parts(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Create  metadata about the generated tab with parts information.
-    
-    Args:
-        data_dict: Original tab data (legacy or parts format)
-        warnings: List of warnings generated during tab creation
-        
-    Returns:
-         metadata dictionary with parts analysis
-    """
-    metadata = create_tab_metadata(data_dict, warnings)
-    
-    # Add server-specific metadata
-    metadata["serverVersion"] = "-with-parts-v1.0"
-    metadata["supportedFormats"] = ["legacy-measures", "parts-structure"]
-    metadata["Features"] = [
-        "song-parts-system",
-        "automatic-part-numbering", 
-        "part-specific-changes",
-        "strum-patterns",
-        "dynamics-emphasis",
-        "grace-notes",
-        "advanced-techniques",
-        "multi-layer-display"
-    ]
-    
-    # Determine which format was used
-    if "parts" in data_dict and "structure" in data_dict:
-        metadata["inputFormat"] = "parts"
-        metadata["formatAdvantages"] = [
-            "Song structure organization",
-            "Automatic part numbering",
-            "Reusable sections",
-            " readability"
-        ]
-    else:
-        metadata["inputFormat"] = "legacy"
-        metadata["formatAdvantages"] = [
-            "Simple linear structure",
-            "Direct measure control",
-            "Backwards compatibility"
-        ]
-    
-    logger.debug(f"Created  metadata with parts support: format={metadata['inputFormat']}")
-    return metadata
 
 # ============================================================================
 #  MCP Server Startup with Parts System

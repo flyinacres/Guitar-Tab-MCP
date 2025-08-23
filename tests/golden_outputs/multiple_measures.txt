@@ -1,6 +1,14 @@
 # Multiple Measures Test
 **Time Signature:** 4/4
 
+**Song Structure:**
+Section 1
+
+**Parts Defined:**
+- **Section**: 4 measures
+
+## Section 1
+
   G                 C                 Em      D         G       Am  C
                     X
   1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &  
@@ -11,3 +19,4 @@
 |-2---------------|-3---------------|-2---------------|-2-------0---3---|
 |-3---------------|-----------------|-----------------|-3---------------|
   D   D   D U D U       D   D   D U   D   D   D U D U   D   D   D U D U
+

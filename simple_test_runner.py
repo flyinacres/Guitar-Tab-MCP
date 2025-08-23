@@ -19,70 +19,85 @@ from pathlib import Path
 def test_basic_chord():
     """Test basic chord functionality."""
     test_data = {
-        "title": "Basic Chord Test",
-        "timeSignature": "4/4",
-        "measures": [
-            {
-                "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                "events": [
-                    {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                        {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                    ]}
-                ]
+            "title": "Basic Chord Test",
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]}
+                            ]
+                        }
+                    ]
+                }
             }
-        ]
     }
     return "basic_chord", test_data
 
 def test_chuck_strum():
     """Test chuck with strum pattern."""
     test_data = {
-        "title": "Chuck and Strum Test",
-        "timeSignature": "4/4",
-        "measures": [
-            {
-                "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
-                "events": [
-                    {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                        {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                    ]},
-                    {"type": "chuck", "beat": 1.0}
-                ]
+            "title": "Chuck with Strum Pattern",
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["", "", "D", "", "D", "", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
+                                ]},
+                                {"type": "chuck", "beat": 1.0}
+                            ]
+                        }
+                    ]
+                }
             }
-        ]
     }
     return "chuck_strum", test_data
 
 def test_three_chord_measure():
     """Test critical three-chord measure pattern."""
     test_data = {
-        "title": "Three Chord Measure Test",
-        "timeSignature": "4/4",
-        "measures": [
-            {
-                "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                "events": [
-                    {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                        {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                    ]},
-                    {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
-                        {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
-                        {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
-                    ]},
-                    {"type": "chord", "beat": 4.0, "chordName": "C", "frets": [
-                        {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, 
-                        {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
-                    ]}
-                ]
+            "title": "Three Chord Measure",
+            "shouldFail": False,
+            "timeSignature": "4/4",
+            "parts": {
+                "Main": {
+                    "measures": [
+                        {
+                            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                            "events": [
+                                {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                                    {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                                ]},
+                                {"type": "chord", "beat": 3.0, "chordName": "Am", "frets": [
+                                    {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
+                                ]},
+                                {"type": "chord", "beat": 4.0, "chordName": "C/B", "frets": [
+                                    {"string": 5, "fret": 2}, {"string": 4, "fret": 2}, 
+                                    {"string": 3, "fret": 0}, {"string": 2, "fret": 1}, {"string": 1, "fret": 0}
+                                ]}
+                            ]
+                        }
+                    ]
+                }
             }
-        ]
     }
     return "three_chord_measure", test_data
 
 def run_test(test_name: str, test_data: dict) -> bool:
     """Run a single test through the MCP system."""
     try:
-        from core_parts import validate_tab_data, generate_tab_output
+        from core import validate_tab_data, generate_tab_output
         
         print(f"Testing: {test_name}...")
         
@@ -124,7 +139,7 @@ def run_test(test_name: str, test_data: dict) -> bool:
 def save_test_output(test_name: str, test_data: dict):
     """Save test output for visual inspection."""
     try:
-        from core_parts import validate_tab_data, generate_tab_output
+        from core import validate_tab_data, generate_tab_output
         
         validation = validate_tab_data(test_data)
         if validation["isError"]:
@@ -196,7 +211,7 @@ def validate_environment():
     print("Validating environment...")
     
     required_modules = [
-        "core_parts",
+        "core",
         "tab_constants", 
         "tab_models",
         "time_signatures"
