@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced Tab Models with Parts/Sections System
+ Tab Models with Parts/Sections System
 ==============================================
 
 Extended Pydantic models to support song structure with named parts/sections
@@ -86,12 +86,12 @@ class SongStructure(BaseModel):
         return v
 
 # ============================================================================
-# Enhanced Tab Request with Parts
+#  Tab Request with Parts
 # ============================================================================
 
-class EnhancedTabRequestWithParts(BaseModel):
+class TabRequestWithParts(BaseModel):
     """
-    Enhanced tab request supporting both legacy measures format and new parts system.
+     tab request supporting both legacy measures format and new parts system.
     
     Can use either:
     1. Legacy format: "measures" array (backwards compatible)
@@ -161,12 +161,12 @@ class EnhancedTabRequestWithParts(BaseModel):
 # Parts Processing Functions
 # ============================================================================
 
-def process_song_structure(request: EnhancedTabRequestWithParts) -> List[PartInstance]:
+def process_song_structure(request: TabRequestWithParts) -> List[PartInstance]:
     """
     Process the song structure to create ordered part instances with numbering.
     
     Args:
-        request: Enhanced tab request with parts and structure
+        request:  tab request with parts and structure
         
     Returns:
         List of PartInstance objects in performance order
@@ -238,14 +238,14 @@ def process_song_structure(request: EnhancedTabRequestWithParts) -> List[PartIns
     
     return instances
 
-def convert_parts_to_legacy_format(request: EnhancedTabRequestWithParts) -> Dict[str, Any]:
+def convert_parts_to_legacy_format(request: TabRequestWithParts) -> Dict[str, Any]:
     """
     Convert new parts+structure format to legacy measures format for backwards compatibility.
     
     This allows the existing tab generation code to work without changes.
     
     Args:
-        request: Enhanced tab request with parts system
+        request:  tab request with parts system
         
     Returns:
         Dictionary in legacy format with flattened measures array
@@ -293,7 +293,7 @@ def convert_parts_to_legacy_format(request: EnhancedTabRequestWithParts) -> Dict
 # Validation Functions for Parts System
 # ============================================================================
 
-def validate_parts_system(request: EnhancedTabRequestWithParts) -> Dict[str, Any]:
+def validate_parts_system(request: TabRequestWithParts) -> Dict[str, Any]:
     """
     Validate the parts system for common issues.
     
@@ -353,7 +353,7 @@ def validate_parts_system(request: EnhancedTabRequestWithParts) -> Dict[str, Any
 # Parts System Statistics
 # ============================================================================
 
-def analyze_song_structure(request: EnhancedTabRequestWithParts) -> Dict[str, Any]:
+def analyze_song_structure(request: TabRequestWithParts) -> Dict[str, Any]:
     """
     Analyze the song structure and provide statistics.
     
@@ -434,7 +434,7 @@ if __name__ == "__main__":
     
     # Test the model
     try:
-        request = EnhancedTabRequestWithParts(**example_request)
+        request = TabRequestWithParts(**example_request)
         print("✅ Parts system validation passed")
         
         # Test structure processing

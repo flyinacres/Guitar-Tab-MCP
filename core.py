@@ -1,9 +1,9 @@
 ﻿#!/usr/bin/env python3
 """
-Guitar Tab Generator - Enhanced Core Implementation
+Guitar Tab Generator -  Core Implementation
 ==================================================
 
-Enhanced core functionality for converting structured JSON guitar tab specifications
+ core functionality for converting structured JSON guitar tab specifications
 into properly aligned UTF-8 tablature with support for strum patterns, dynamics,
 and emphasis markings.
 
@@ -14,7 +14,7 @@ Key Enhancements:
 - Multi-layer display system (chord names, dynamics, annotations, beat markers, tab, strum pattern)
 """
 
-# Import enhanced models and constants
+# Import  models and constants
 import sys
 import json
 import logging
@@ -27,8 +27,8 @@ from tab_constants import (
     get_instrument_config, get_max_string, Instrument
 )
 from tab_models import (
-    EnhancedTabRequest, EnhancedTabResponse, StrumPatternEvent,
-    GraceNoteEvent, DynamicEvent, EnhancedPalmMute, EnhancedChuck
+    TabRequest, TabResponse, StrumPatternEvent,
+    GraceNoteEvent, DynamicEvent, PalmMute, Chuck
 )
 from time_signatures import (
     get_time_signature_config,
@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# Enhanced Validation Pipeline
+#  Validation Pipeline
 # ============================================================================
 
 
@@ -105,9 +105,9 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
     
     return {"isError": False}
 
-def validate_timing_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Enhanced timing validation that includes new event types.
+     timing validation that includes new event types.
     
     Validates beat timing for:
     - Standard musical events (notes, chords, techniques)
@@ -143,7 +143,7 @@ def validate_timing_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
                     "suggestion": "Add 'beat' or 'startBeat' field to event"
                 }
             
-            # Enhanced beat validation for different event types
+            #  beat validation for different event types
             if event_type == "graceNote":
                 # Grace notes have special timing requirements
                 grace_result = validate_grace_note_timing(beat, time_sig, measure_idx)
@@ -159,12 +159,12 @@ def validate_timing_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
                     logger.warning(f"Invalid beat {beat} for {time_sig} in measure {measure_idx}")
                     return create_beat_validation_error(beat, time_sig, measure_idx)
     
-    logger.debug("Enhanced timing validation passed")
+    logger.debug(" timing validation passed")
     return {"isError": False}
 
-def validate_conflicts_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Enhanced conflict detection that handles new event types.
+     conflict detection that handles new event types.
     
     Checks for:
     - Musical event conflicts (multiple notes on same string/beat)
@@ -172,7 +172,7 @@ def validate_conflicts_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
     - Strum pattern overlaps
     - Dynamic marking conflicts
     """
-    logger.debug("Starting enhanced conflict validation")
+    logger.debug("Starting  conflict validation")
     
     for measure_idx, measure in enumerate(data["measures"], 1):
         events_by_position = {}
@@ -268,8 +268,8 @@ def validate_conflicts_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
             
             events_by_position[position_key] = event
             
-            # Validate technique-specific rules (enhanced)
-            technique_error = validate_technique_rules_enhanced(event, measure_idx, beat)
+            # Validate technique-specific rules ()
+            technique_error = validate_technique_rules(event, measure_idx, beat)
             if technique_error["isError"]:
                 return technique_error
         
@@ -278,7 +278,7 @@ def validate_conflicts_enhanced(data: Dict[str, Any]) -> Dict[str, Any]:
         if grace_conflict["isError"]:
             return grace_conflict
     
-    logger.debug("Enhanced conflict validation passed")
+    logger.debug(" conflict validation passed")
     return {"isError": False}
 
 # ============================================================================
@@ -489,7 +489,10 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
     - Bend semitones must be 0.5-3.0 (quarter-step to step-and-a-half)
     - Palm mute duration must be positive and reasonable (0.5-8.0 beats)
     - Chuck events only need string and beat (no fret required)
-    
+    - Emphasis compatibility with techniques
+    -  bend notation with emphasis
+    - Vibrato + emphasis combinations
+
     Special fret values:
     - "x" or "X" = muted/dead string (produces no pitch)
     - 0 = open string (no finger pressure needed)
@@ -578,23 +581,6 @@ def validate_technique_rules(event: Dict[str, Any], measure_idx: int, beat: floa
                     "message": f"Invalid semitones value: {semitones}",
                     "suggestion": "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)" 
                 }
-        
-    return {"isError": False}
-
-
-def validate_technique_rules_enhanced(event: Dict[str, Any], measure_idx: int, beat: float) -> Dict[str, Any]:
-    """
-    Enhanced technique validation that includes emphasis markings.
-    
-    Validates all the original technique rules plus:
-    - Emphasis compatibility with techniques
-    - Enhanced bend notation with emphasis
-    - Vibrato + emphasis combinations
-    """
-    # First run the original validation
-    original_result = validate_technique_rules(event, measure_idx, beat)
-    if original_result["isError"]:
-        return original_result
     
     # Additional validation for emphasis on techniques
     emphasis = event.get("emphasis")
@@ -607,22 +593,20 @@ def validate_technique_rules_enhanced(event: Dict[str, Any], measure_idx: int, b
         if emphasis in ["pp", "p"] and event_type == "bend":
             logger.warning(f"Soft dynamics on bends may not be effective")
             # This is a warning, not an error
-    
+            
     return {"isError": False}
 
-# Note: The original validate_technique_rules function would remain unchanged
-# but we import it or copy it here for compatibility
 
-logger.info("Enhanced core validation module loaded successfully") 
+logger.info(" core validation module loaded successfully") 
 
 
 # ============================================================================
-# Enhanced Tab Generation Engine
+#  Tab Generation Engine
 # ============================================================================
 
-def generate_tab_output_enhanced(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
+def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
     """
-    Enhanced tab generation with multi-layer display support.
+     tab generation with multi-layer display support.
     
     Generates tabs with up to 6 display layera:
     1. Chord names
@@ -639,14 +623,14 @@ def generate_tab_output_enhanced(data: Dict[str, Any]) -> Tuple[str, List[Dict[s
         Tuple of (tab_string, warnings_list)
     """
     title = data.get("title", "Untitled")
-    logger.info(f"Generating enhanced tab for '{title}'")
+    logger.info(f"Generating  tab for '{title}'")
     
     measures = data["measures"]
     warnings = []
     output_lines = []
     
-    # Generate enhanced header information
-    header_lines = generate_enhanced_header(data)
+    # Generate  header information
+    header_lines = generate_header(data)
     output_lines.extend(header_lines)
     output_lines.append("")
     
@@ -655,49 +639,21 @@ def generate_tab_output_enhanced(data: Dict[str, Any]) -> Tuple[str, List[Dict[s
         measure_group = measures[measure_group_start:measure_group_start + 4]
         time_sig = data.get("timeSignature", "4/4")
         
-        # Generate enhanced measure group with all display layers
-        tab_section, section_warnings = generate_measure_group_enhanced(
+        # Generate  measure group with all display layers
+        tab_section, section_warnings = generate_measure_group(
             measure_group, measure_group_start, time_sig, data
         )
         warnings.extend(section_warnings)
         output_lines.extend(tab_section)
         output_lines.append("")  # Space between groups
     
-    logger.info(f"Generated enhanced tab with {len(warnings)} warnings")
+    logger.info(f"Generated  tab with {len(warnings)} warnings")
     return "\n".join(output_lines), warnings
 
 # ============================================================================
 # Backwards Compatibility Wrappers
 # ============================================================================
 
-def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
-    """
-    Backwards compatibility wrapper for the original generate_tab_output function.
-    
-    This allows existing code to work while gradually migrating to enhanced features.
-    """
-    # Check if the data contains enhanced features
-    has_enhanced_features = False
-    
-    for measure in data.get("measures", []):
-        for event in measure.get("events", []):
-            if (event.get("type") in ["strumPattern", "graceNote", "dynamic"] or
-                event.get("emphasis") is not None):
-                has_enhanced_features = True
-                break
-        if has_enhanced_features:
-            break
-    
-    # Use enhanced generation if needed, otherwise use original
-    if has_enhanced_features:
-        logger.info("Using enhanced tab generation for advanced features")
-        return generate_tab_output_enhanced(data)
-    else:
-        logger.info("Using standard tab generation for basic features")
-        # Would call the original function here
-        return generate_tab_output_enhanced(data)  # For now, always use enhanced
-
-logger.info("Enhanced tab generation module loaded successfully")
 
 def generate_strum_line(measures: List[Dict[str, Any]], num_measures: int, time_signature: str) -> str:
     """Generate strum line from measure strumPattern fields."""
@@ -720,9 +676,9 @@ def generate_strum_line(measures: List[Dict[str, Any]], num_measures: int, time_
     return "".join(strum_chars).rstrip()
 
 
-def generate_enhanced_header(data: Dict[str, Any]) -> List[str]:
+def generate_header(data: Dict[str, Any]) -> List[str]:
     """
-    Generate enhanced header with additional metadata.
+    Generate  header with additional metadata.
     """
     lines = []
     
@@ -875,14 +831,14 @@ def generate_palm_mute_notation(duration: float) -> str:
     return "PM" + "-" * num_dashes
 
 
-def generate_measure_group_enhanced(
+def generate_measure_group(
     measures: List[Dict[str, Any]], 
     start_index: int, 
     time_signature: str,
     tab_data: Dict[str, Any]
 ) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
-    Generate enhanced tab section with multi-layer display.
+    Generate  tab section with multi-layer display.
     
     Creates all display layers:
     - Chord names (when present)
@@ -918,7 +874,7 @@ def generate_measure_group_enhanced(
         logger.warning(f"Unknown instrument {instrument_str}, defaulting to 6 strings")
     
     
-    logger.debug(f"Generating enhanced measure group: {num_measures} measures of {time_signature}")
+    logger.debug(f"Generating  measure group: {num_measures} measures of {time_signature}")
     
     # Generate all display layers
     display_layers = generate_all_display_layers(measures, num_measures, time_signature, tab_data)
@@ -942,7 +898,7 @@ def generate_measure_group_enhanced(
     
     # Place events on appropriate string lines
     for measure_idx, measure in enumerate(measures):
-        measure_warnings = place_measure_events_enhanced(
+        measure_warnings = place_measure_events(
             measure, string_lines, measure_idx, start_index + measure_idx + 1, time_signature
         )
         warnings.extend(measure_warnings)
@@ -1054,7 +1010,7 @@ def process_measure_for_display_layers(
         elif event_type == "palmMute":
             duration = event.get("duration", 1.0)
             intensity = event.get("intensity", "")
-            pm_text = generate_enhanced_palm_mute_notation(duration, intensity)
+            pm_text = generate_palm_mute_notation(duration, intensity)
             place_annotation_text(layers[DisplayLayer.ANNOTATIONS], char_position, pm_text, total_width)
         
         elif event_type == "chuck":
@@ -1080,9 +1036,9 @@ def process_measure_for_display_layers(
                 time_signature, layers[DisplayLayer.STRUM_PATTERN], total_width
             )
 
-def generate_enhanced_palm_mute_notation(duration: float, intensity: str = "") -> str:
+def generate_palm_mute_notation(duration: float, intensity: str = "") -> str:
     """
-    Generate enhanced palm mute notation with intensity indicators.
+    Generate  palm mute notation with intensity indicators.
     
     Args:
         duration: Duration in beats
@@ -1186,7 +1142,7 @@ def process_strum_pattern(
                 else:
                     logger.warning(f"Character position {char_position} exceeds total width {total_width}")
 
-def place_measure_events_enhanced(
+def place_measure_events(
     measure: Dict[str, Any], 
     string_lines: List[str], 
     measure_offset: int, 
@@ -1194,7 +1150,7 @@ def place_measure_events_enhanced(
     time_signature: str
 ) -> List[Dict[str, Any]]:
     """
-    Enhanced version of place_measure_events with support for new event types.
+     version of place_measure_events with support for new event types.
     
     Args:
         measure: Single measure dictionary containing events list
@@ -1225,7 +1181,7 @@ def place_measure_events_enhanced(
             continue
             
         # Handle regular musical events
-        event_warnings = place_event_on_tab_enhanced(event, string_lines, measure_offset, measure_number, time_signature)
+        event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
         warnings.extend(event_warnings)
     
     logger.debug(f"Placed events for measure {measure_number}, generated {len(warnings)} warnings")
@@ -1310,7 +1266,7 @@ def place_grace_note_on_tab(
     return warnings
 
 
-def place_event_on_tab_enhanced(
+def place_event_on_tab(
     event: Dict[str, Any], 
     string_lines: List[str], 
     measure_offset: int, 
@@ -1318,7 +1274,7 @@ def place_event_on_tab_enhanced(
     time_signature: str
 ) -> List[Dict[str, Any]]:
     """
-    Enhanced version of place_event_on_tab with emphasis support.
+     version of place_event_on_tab with emphasis support.
     
     Places musical events on tab lines and handles emphasis markings
     by adjusting the notation (when possible in UTF-8 format).
@@ -1347,10 +1303,10 @@ def place_event_on_tab_enhanced(
     return warnings
 
 # ============================================================================
-# Enhanced Utility Functions
+#  Utility Functions
 # ============================================================================
 
-def place_annotation_text_enhanced(
+def place_annotation_text(
     char_array: List[str], 
     position: int, 
     text: str, 
@@ -1358,7 +1314,7 @@ def place_annotation_text_enhanced(
     allow_overlap: bool = False
 ):
     """
-    Enhanced version of place_annotation_text with overlap handling.
+     version of place_annotation_text with overlap handling.
     
     Args:
         char_array: Mutable list of characters
@@ -1377,9 +1333,9 @@ def place_annotation_text_enhanced(
                 continue
             char_array[target_pos] = char
 
-def check_attempt_limit_enhanced(attempt: int) -> Optional[Dict[str, Any]]:
+def check_attempt_limit(attempt: int) -> Optional[Dict[str, Any]]:
     """
-    Enhanced attempt limit checking with more detailed error messages.
+     attempt limit checking with more detailed error messages.
     """
     MAX_ATTEMPTS = 5
     
@@ -1602,7 +1558,7 @@ def place_event_on_tab(event: Dict[str, Any], string_lines: List[str], measure_o
         else:
             fret_str = str(fret)
     
-        # Generate enhanced notation with Unicode fraction semitone amounts
+        # Generate  notation with Unicode fraction semitone amounts
         semitone_str = format_semitone_string(semitones)
         technique_str = f"{fret_str}b{semitone_str}"
 

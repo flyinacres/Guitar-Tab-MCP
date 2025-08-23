@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Simple Test Runner for Guitar Tab MCP
 =====================================
@@ -197,7 +198,7 @@ def validate_environment():
     required_modules = [
         "core_parts",
         "tab_constants", 
-        "tab_models_parts",
+        "tab_models",
         "time_signatures"
     ]
     

@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Guitar Tab Generator - Enhanced MCP Server with Parts System
+Guitar Tab Generator -  MCP Server with Parts System
 ===========================================================
 
-Enhanced FastMCP server implementation with support for:
+ FastMCP server implementation with support for:
 - Song parts/sections with automatic numbering (Verse 1, Chorus 1, etc.)
 - Complete song structure definition
 - Backwards compatibility with legacy measures format
-- All existing enhanced features (strum patterns, dynamics, grace notes, etc.)
+- All existing  features (strum patterns, dynamics, grace notes, etc.)
 
 New Parts System Features:
 - Named song sections (Intro, Verse, Chorus, Bridge, Outro, etc.)
 - Automatic numbering for repeated parts
 - Song structure with part ordering
 - Part-specific tempo/key/time signature changes
-- Enhanced metadata with song structure analysis
+-  metadata with song structure analysis
 
 Usage:
-    python enhanced_mcp_server_parts.py
+    python mcp_server_parts.py
 
 For Claude Desktop integration, add to config:
 {
   "mcpServers": {
     "guitar-tab-generator": {
       "command": "python",
-      "args": ["/path/to/enhanced_mcp_server_parts.py"]
+      "args": ["/path/to/mcp_server_parts.py"]
     }
   }
 }
@@ -38,14 +38,14 @@ from typing import Dict, Any, List, Optional
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-# Import enhanced functionality with parts support
-from enhanced_core_with_parts import (
+# Import  functionality with parts support
+from core_with_parts import (
     validate_tab_data, generate_tab_output, 
-    check_attempt_limit_enhanced as check_attempt_limit,
+    check_attempt_limit as check_attempt_limit,
     create_tab_metadata
 )
-from enhanced_tab_models_parts import (
-    EnhancedTabRequestWithParts, EnhancedTabResponse, 
+from tab_models import (
+    TabRequest, TabResponse, 
     SongPart, PartInstance, analyze_song_structure
 )
 from tab_constants import (
@@ -62,16 +62,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# Enhanced MCP Server Setup with Parts System
+#  MCP Server Setup with Parts System
 # ============================================================================
 
-# Initialize FastMCP server with enhanced metadata
-mcp = FastMCP("Enhanced Guitar Tab Generator with Parts System")
+# Initialize FastMCP server with  metadata
+mcp = FastMCP(" Guitar Tab Generator with Parts System")
 
 @mcp.tool()
-def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
+def generate_guitar_tab(tab_data: str) -> TabResponse:
     """
-    Generate UTF-8 guitar tablature from structured JSON input with enhanced features including song parts/sections.
+    Generate UTF-8 guitar tablature from structured JSON input with  features including song parts/sections.
     
     Converts guitar tab specifications into properly formatted UTF-8 tablature with 
     comprehensive support for musical notation, dynamics, strum patterns, advanced 
@@ -81,7 +81,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         tab_data: Complete guitar tab specification with title, parts/measures, and structure
         
     Returns:
-        EnhancedTabResponse with generated tab content, warnings, and metadata
+        TabResponse with generated tab content, warnings, and metadata
         
     
     ## QUICK SMOKE TESTS (Gold Standard)
@@ -230,7 +230,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     [identical tab content for chorus]
     ```
     
-    ## Enhanced Features (All Still Available)
+    ##  Features (All Still Available)
     
     ### Strum Patterns
     Add strum direction indicators below tablature:
@@ -276,7 +276,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     - **slide**: `{"type": "slide", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up", "vibrato": true}`
     - **bend**: `{"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true, "emphasis": "ff"}`
     
-    ### Enhanced Annotations
+    ###  Annotations
     - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "heavy"}` → "PM(H)----"
     - **chuck**: `{"type": "chuck", "beat": 2.0, "intensity": "heavy"}` → "XH"
     
@@ -405,7 +405,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     
     ## Error Handling & Validation
     
-    Enhanced validation for parts system:
+     validation for parts system:
     - **Part references**: All structure references must exist in parts
     - **Part uniqueness**: Part names must be unique
     - **Musical consistency**: Validates tempo/key/time signature changes
@@ -429,9 +429,9 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     4. **Performance Planning**: Clear section markers for live performance
     5. **Teaching Materials**: Structured lessons with named sections
     
-    The enhanced parts system transforms the tab generator from a simple measure processor into a complete song structure tool, while maintaining full compatibility with existing functionality.
+    The  parts system transforms the tab generator from a simple measure processor into a complete song structure tool, while maintaining full compatibility with existing functionality.
     """
-    logger.info(f"Received enhanced tab generation request with parts support")
+    logger.info(f"Received  tab generation request with parts support")
     logger.debug(f"Request data type: {type(tab_data)}")
     
     try:
@@ -450,12 +450,12 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
             logger.warning("Format unclear, attempting validation")
             format_type = "unknown"
         
-        # Create enhanced request model for validation
+        # Create  request model for validation
         try:
-            request = EnhancedTabRequestWithParts(**data_dict)
-            logger.info(f"Enhanced request validated: '{request.title}' (attempt {request.attempt}) - {format_type} format")
+            request = TabRequest(**data_dict)
+            logger.info(f" request validated: '{request.title}' (attempt {request.attempt}) - {format_type} format")
         except Exception as validation_error:
-            logger.warning(f"Enhanced model validation failed, using basic validation: {validation_error}")
+            logger.warning(f" model validation failed, using basic validation: {validation_error}")
             # Fall back to basic validation for backwards compatibility
             if "title" not in data_dict:
                 data_dict["title"] = "Untitled"
@@ -465,38 +465,38 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         attempt_error = check_attempt_limit(attempt)
         if attempt_error:
             logger.warning(f"Attempt limit exceeded: {attempt}")
-            return EnhancedTabResponse(success=False, error=attempt_error)
+            return TabResponse(success=False, error=attempt_error)
         
-        # Enhanced validation pipeline with parts support
-        logger.debug("Starting enhanced validation pipeline with parts support")
+        #  validation pipeline with parts support
+        logger.debug("Starting  validation pipeline with parts support")
         validation_result = validate_tab_data(data_dict)
         if validation_result["isError"]:
-            logger.warning(f"Enhanced validation failed: {validation_result['message']}")
-            return EnhancedTabResponse(success=False, error=validation_result)
+            logger.warning(f" validation failed: {validation_result['message']}")
+            return TabResponse(success=False, error=validation_result)
         
-        logger.info("Enhanced validation with parts support passed successfully")
+        logger.info(" validation with parts support passed successfully")
                                             
-        # Generate enhanced tab with parts and all new features
-        logger.debug("Starting enhanced tab generation with parts support")
+        # Generate  tab with parts and all new features
+        logger.debug("Starting  tab generation with parts support")
         tab_output, warnings = generate_tab_output(data_dict)
         
-        # Create enhanced metadata with parts information
+        # Create  metadata with parts information
         metadata = create_tab_metadata(data_dict, warnings)
-        logger.info(f"Enhanced tab with parts generated successfully with {len(warnings)} warnings")
+        logger.info(f" tab with parts generated successfully with {len(warnings)} warnings")
         
         # Add format information to metadata
         metadata["inputFormat"] = format_type
         if format_type == "parts":
             # Add parts-specific metadata
             try:
-                request = EnhancedTabRequestWithParts(**data_dict)
+                request = TabRequest(**data_dict)
                 if request.parts and request.structure:
                     structure_analysis = analyze_song_structure(request)
                     metadata["songStructureAnalysis"] = structure_analysis
             except Exception as e:
                 logger.debug(f"Could not add structure analysis: {e}")
                                                   
-        return EnhancedTabResponse(
+        return TabResponse(
             success=True, 
             content=tab_output, 
             warnings=warnings,
@@ -505,7 +505,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}")
-        return EnhancedTabResponse(
+        return TabResponse(
             success=False, 
             error={
                 "isError": True,
@@ -516,8 +516,8 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         )
     
     except Exception as e:
-        logger.error(f"Unexpected error during enhanced tab generation with parts: {e}")
-        return EnhancedTabResponse(
+        logger.error(f"Unexpected error during  tab generation with parts: {e}")
+        return TabResponse(
             success=False, 
             error={
                 "isError": True,
@@ -545,7 +545,7 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
     
     try:
         data_dict = json.loads(tab_data)
-        request = EnhancedTabRequestWithParts(**data_dict)
+        request = TabRequest(**data_dict)
         
         if not (request.parts and request.structure):
             return {
@@ -588,23 +588,23 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
             "error": f"Analysis error: {str(e)}"
         }
 
-def create_enhanced_metadata_with_parts(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
+def create_metadata_with_parts(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create enhanced metadata about the generated tab with parts information.
+    Create  metadata about the generated tab with parts information.
     
     Args:
         data_dict: Original tab data (legacy or parts format)
         warnings: List of warnings generated during tab creation
         
     Returns:
-        Enhanced metadata dictionary with parts analysis
+         metadata dictionary with parts analysis
     """
     metadata = create_tab_metadata(data_dict, warnings)
     
     # Add server-specific metadata
-    metadata["serverVersion"] = "enhanced-with-parts-v1.0"
+    metadata["serverVersion"] = "-with-parts-v1.0"
     metadata["supportedFormats"] = ["legacy-measures", "parts-structure"]
-    metadata["enhancedFeatures"] = [
+    metadata["Features"] = [
         "song-parts-system",
         "automatic-part-numbering", 
         "part-specific-changes",
@@ -622,7 +622,7 @@ def create_enhanced_metadata_with_parts(data_dict: Dict[str, Any], warnings: Lis
             "Song structure organization",
             "Automatic part numbering",
             "Reusable sections",
-            "Enhanced readability"
+            " readability"
         ]
     else:
         metadata["inputFormat"] = "legacy"
@@ -632,23 +632,23 @@ def create_enhanced_metadata_with_parts(data_dict: Dict[str, Any], warnings: Lis
             "Backwards compatibility"
         ]
     
-    logger.debug(f"Created enhanced metadata with parts support: format={metadata['inputFormat']}")
+    logger.debug(f"Created  metadata with parts support: format={metadata['inputFormat']}")
     return metadata
 
 # ============================================================================
-# Enhanced MCP Server Startup with Parts System
+#  MCP Server Startup with Parts System
 # ============================================================================
 
 def main():
     """
-    Start the enhanced MCP server with parts system.
+    Start the  MCP server with parts system.
 
     This runs the FastMCP server in stdio mode for integration with
     Claude Desktop and other MCP clients, with full support for
-    enhanced guitar tab features including song parts and structure.
+     guitar tab features including song parts and structure.
     """
-    logger.info("Starting Enhanced Guitar Tab Generator MCP Server with Parts System")
-    logger.info("Enhanced features available:")
+    logger.info("Starting  Guitar Tab Generator MCP Server with Parts System")
+    logger.info(" features available:")
     logger.info("  • Song parts/sections with automatic numbering")
     logger.info("  • Complete song structure definition")
     logger.info("  • Part-specific tempo/key/time signature changes")
@@ -666,14 +666,14 @@ def main():
     logger.debug("  • Automatic part instance numbering")
     logger.debug("  • Musical consistency validation")
     logger.debug("  • Legacy format backwards compatibility")
-    logger.debug("  • Enhanced song structure analysis")
+    logger.debug("  •  song structure analysis")
     
     try:
         mcp.run()
     except KeyboardInterrupt:
-        logger.info("Enhanced MCP server with parts system stopped by user")
+        logger.info(" MCP server with parts system stopped by user")
     except Exception as e:
-        logger.error(f"Enhanced MCP server with parts system error: {e}")
+        logger.error(f" MCP server with parts system error: {e}")
         raise
 
 if __name__ == "__main__":

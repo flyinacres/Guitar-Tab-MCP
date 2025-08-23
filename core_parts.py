@@ -19,7 +19,7 @@ from tab_constants import (
     STRUM_POSITIONS_PER_MEASURE, get_strum_positions_for_time_signature,
     is_valid_emphasis, ERROR_MESSAGES, DisplayLayer, DISPLAY_LAYER_ORDER
 )
-from tab_models import EnhancedTabRequest, EnhancedTabResponse
+from tab_models import TabRequest, TabResponse
 from time_signatures import (
     get_time_signature_config, is_beat_valid, calculate_char_position,
     generate_beat_markers, create_beat_validation_error, create_time_signature_error,
@@ -27,26 +27,26 @@ from time_signatures import (
 )
 
 # Import parts system
-from tab_models_parts import (
-    EnhancedTabRequestWithParts, SongPart, PartInstance,
+from tab_models import (
+    TabRequest, SongPart, PartInstance,
     process_song_structure, convert_parts_to_legacy_format,
     validate_parts_system, analyze_song_structure
 )
 
 # Import all existing functions from core.py
 from core import (
-    validate_schema, validate_timing_enhanced, validate_conflicts_enhanced,
+    validate_schema, validate_timing, validate_conflicts,
     validate_strum_patterns, validate_emphasis_markings,
     validate_measure_strum_patterns,
-    generate_measure_group_enhanced, place_measure_events_enhanced,
+    generate_measure_group, place_measure_events,
     generate_all_display_layers, process_measure_for_display_layers,
-    place_annotation_text, generate_enhanced_palm_mute_notation,
+    place_annotation_text, generate_palm_mute_notation,
     generate_dynamic_notation, process_strum_pattern,
-    place_grace_note_on_tab, place_event_on_tab_enhanced,
+    place_grace_note_on_tab, place_event_on_tab,
     place_event_on_tab, replace_chars_at_position,
     format_semitone_string, check_attempt_limit,
     validate_grace_note_timing, validate_grace_note_conflicts,
-    validate_technique_rules_enhanced, validate_technique_rules
+    validate_technique_rules, validate_technique_rules
 )
 
 # Configure logging
@@ -125,12 +125,12 @@ def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
         return schema_result
     
     # Stage 2: Timing validation
-    timing_result = validate_timing_enhanced(data)
+    timing_result = validate_timing(data)
     if timing_result["isError"]:
         return timing_result
     
     # Stage 3: Conflict validation
-    conflict_result = validate_conflicts_enhanced(data)
+    conflict_result = validate_conflicts(data)
     if conflict_result["isError"]:
         return conflict_result
     
@@ -172,7 +172,7 @@ def generate_tab_output_with_parts(data: Dict[str, Any]) -> Tuple[str, List[Dict
     logger.info(f"Generating tab with parts support for '{title}'")
     
     try:
-        request = EnhancedTabRequestWithParts(**data)
+        request = TabRequest(**data)
         
         if request.parts and request.structure:
             logger.info("Using parts format")
@@ -186,7 +186,7 @@ def generate_tab_output_with_parts(data: Dict[str, Any]) -> Tuple[str, List[Dict
         logger.warning(f"Parts parsing failed, using legacy: {e}")
         return generate_tab_output_legacy(data)
 
-def generate_tab_with_parts_format(request: EnhancedTabRequestWithParts) -> Tuple[str, List[Dict[str, Any]]]:
+def generate_tab_with_parts_format(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]:
     """Generate tab using parts format with section headers."""
     logger.info(f"Generating parts-based tab for '{request.title}'")
     
@@ -232,7 +232,7 @@ def generate_tab_with_parts_format(request: EnhancedTabRequestWithParts) -> Tupl
             }
             
             # Generate measure group
-            tab_section, section_warnings = generate_measure_group_enhanced(
+            tab_section, section_warnings = generate_measure_group(
                 measure_group, measure_group_start, part_time_sig, temp_data
             )
             warnings.extend(section_warnings)
@@ -264,7 +264,7 @@ def generate_tab_output_legacy(data: Dict[str, Any]) -> Tuple[str, List[Dict[str
         time_sig = data.get("timeSignature", "4/4")
         
         # Generate measure group
-        tab_section, section_warnings = generate_measure_group_enhanced(
+        tab_section, section_warnings = generate_measure_group(
             measure_group, measure_group_start, time_sig, data
         )
         warnings.extend(section_warnings)
@@ -278,7 +278,7 @@ def generate_tab_output_legacy(data: Dict[str, Any]) -> Tuple[str, List[Dict[str
 # Header Generation Functions
 # ============================================================================
 
-def generate_header_with_parts(request: EnhancedTabRequestWithParts) -> List[str]:
+def generate_header_with_parts(request: TabRequest) -> List[str]:
     """Generate header for parts-based songs."""
     lines = []
     
@@ -354,7 +354,7 @@ def generate_header_legacy(data: Dict[str, Any]) -> List[str]:
     lines.append(" | ".join(info_parts))
     return lines
 
-def generate_part_header(instance: PartInstance, request: EnhancedTabRequestWithParts) -> List[str]:
+def generate_part_header(instance: PartInstance, request: TabRequest) -> List[str]:
     """Generate header for individual song parts."""
     lines = []
     
@@ -388,7 +388,7 @@ def generate_part_header(instance: PartInstance, request: EnhancedTabRequestWith
 def create_tab_metadata_with_parts(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Create metadata for parts-based tabs."""
     try:
-        request = EnhancedTabRequestWithParts(**data_dict)
+        request = TabRequest(**data_dict)
         
         if request.parts and request.structure:
             return create_parts_metadata(request, warnings)
@@ -399,7 +399,7 @@ def create_tab_metadata_with_parts(data_dict: Dict[str, Any], warnings: List[Dic
         logger.warning(f"Error creating metadata: {e}")
         return create_legacy_metadata(data_dict, warnings)
 
-def create_parts_metadata(request: EnhancedTabRequestWithParts, warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
+def create_parts_metadata(request: TabRequest, warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Create metadata for parts-based songs."""
     structure_analysis = analyze_song_structure(request)
     
@@ -462,7 +462,7 @@ def create_tab_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]
     """Main metadata creation entry point with parts support."""
     return create_tab_metadata_with_parts(data_dict, warnings)
 
-def check_attempt_limit_enhanced(attempt: int) -> Optional[Dict[str, Any]]:
+def check_attempt_limit(attempt: int) -> Optional[Dict[str, Any]]:
     """Enhanced attempt limit checking with parts-specific guidance."""
     MAX_ATTEMPTS = 5
     

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Guitar Tab MCP Test Framework
 ============================
@@ -21,9 +22,10 @@ import difflib
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 import logging
+import traceback
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 class TabTestFramework:
@@ -64,7 +66,10 @@ class TabTestFramework:
             return True, tab_output, None
             
         except Exception as e:
+            # If there was an exception, probably want to know where!
+            logging.error(traceback.format_exc())
             return False, "", f"Generation failed: {str(e)}"
+
     
     def compare_with_golden(self, test_name: str, actual_output: str) -> bool:
         """Compare actual output with golden standard."""
@@ -461,7 +466,7 @@ def validate_project_structure():
         "mcp_server_parts.py", 
         "cli.py",
         "tab_constants.py",
-        "tab_models_parts.py",
+        "tab_models.py",
         "time_signatures.py",
         "requirements.txt"
     ]

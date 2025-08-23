@@ -1,15 +1,17 @@
 ﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Guitar Tab Generator - Enhanced MCP Server Implementation
+Tab Generator - MCP Server Implementation
 ========================================================
 
-Enhanced FastMCP server implementation with support for:
+FastMCP server implementation with support for:
+- Song parts/sections with automatic numbering (Verse 1, Chorus 1, etc.)
+- Complete song structure definition
 - Strum patterns and direction indicators
 - Dynamic and emphasis markings  
 - Grace notes and advanced techniques
 - Multi-layer display system
-- Enhanced validation and error reporting
+- Validation and error reporting
 
 Key MCP Implementation Details:
 - stdio transport only (stdout for JSON-RPC, stderr for logging)
@@ -38,13 +40,12 @@ from typing import Dict, Any, List, Optional
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
-# Import enhanced functionality
+# Import  functionality
 from core_parts import (
     validate_tab_data, generate_tab_output, 
-    check_attempt_limit_enhanced as check_attempt_limit
+    check_attempt_limit as check_attempt_limit
 )
-from tab_models_parts import EnhancedTabRequestWithParts
-from tab_models import EnhancedTabResponse
+from tab_models import TabResponse, TabRequest
 from tab_constants import (
     StrumDirection, DynamicLevel, ArticulationMark,
     VALID_EMPHASIS_VALUES, STRUM_POSITIONS_PER_MEASURE
@@ -52,23 +53,23 @@ from tab_constants import (
 
 # Configure logging to stderr (stdout reserved for MCP JSON-RPC protocol)
 logging.basicConfig(
-    level=logging.DEBUG,  # Enhanced logging for new features
+    level=logging.DEBUG,  #  logging for new features
     format='%(asctime)s - MCP-TAB - %(levelname)s - %(message)s',
     stream=sys.stderr
 )
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# Enhanced MCP Server Setup
+#  MCP Server Setup
 # ============================================================================
 
-# Initialize FastMCP server with enhanced metadata
-mcp = FastMCP("Enhanced Guitar Tab Generator")
+# Initialize FastMCP server with  metadata
+mcp = FastMCP(" Guitar Tab Generator")
 
 @mcp.tool()
-def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
+def generate_guitar_tab(tab_data: str) -> TabResponse:
     """
-    Generate UTF-8 guitar tablature from structured JSON input with enhanced features.
+    Generate UTF-8 guitar tablature from structured JSON input with  features.
     
     Converts guitar tab specifications into properly formatted UTF-8 tablature with 
     comprehensive support for musical notation, dynamics, strum patterns, and 
@@ -79,9 +80,9 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         tab_data: Complete guitar tab specification with title, measures, and events
         
     Returns:
-        EnhancedTabResponse with generated tab content, warnings, and metadata
+        TabResponse with generated tab content, warnings, and metadata
         
-    ## Enhanced Features (NEW)
+    ##  Features (NEW)
     
     ### Strum Patterns
     Create strum direction indicators below the tablature:
@@ -168,7 +169,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
 
    Benefits: Cleaner, more compact, musical notation using Unicode superscripts.
 
-    ### Enhanced Annotations
+    ###  Annotations
     Improved palm mutes and chucks with intensity:
     ```json
     {
@@ -180,7 +181,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     ```
     **Output:** Shows "PM(H)----" with intensity indicator
     
-    ## Core Features (Enhanced)
+    ## Core Features ()
     
     ### Basic Events
     - **note**: `{"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "emphasis": "f"}`
@@ -192,7 +193,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     - **slide**: `{"type": "slide", "string": 1-6, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up", "vibrato": true}`
     - **bend**: `{"type": "bend", "string": 1-6, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true, "emphasis": "ff"}`
     
-    ### Advanced Bend Notation (Enhanced)
+    ### Advanced Bend Notation ()
     Precise semitone control with Unicode fractions:
     - `0.25` → "¼" (quarter step)
     - `0.5` → "½" (half step) 
@@ -200,15 +201,15 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     - `1.5` → "1½" (step and a half)
     - `2.0` → "2" (whole tone)
     
-    ### Enhanced Annotations
+    ###  Annotations
     - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "light|medium|heavy"}`
     - **chuck**: `{"type": "chuck", "beat": 2.0, "intensity": "heavy"}` → Shows "XH"
     
-    ### String Muting (Enhanced)
+    ### String Muting ()
     - **Muted strings**: Use `"fret": "x"` for dead/muted strings in notes and chords
     - **Emphasis on muted**: `{"type": "note", "string": 1, "beat": 1.0, "fret": "x", "emphasis": ">"}`
     
-    ## Time Signature Support (Enhanced)
+    ## Time Signature Support ()
     
     ### Supported Time Signatures
     - **4/4**: 8 strum positions per measure `["D","","U","","D","U","D","U"]`
@@ -221,7 +222,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     - Patterns can span multiple measures evenly
     - Valid directions: "D" (down), "U" (up), "" (no strum)
     
-    ## Enhanced JSON Structure
+    ##  JSON Structure
     
     ```json
     {
@@ -274,7 +275,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     }
     ```
     
-    ## Enhanced Output Format
+    ##  Output Format
     
     ```
     # Song Title
@@ -295,7 +296,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
       D   U   D U D U   D   U   D U D U
     ```
     
-    ## Enhanced Error Messages
+    ##  Error Messages
     
     The system provides detailed error messages for:
     - **Invalid strum patterns**: Length mismatches, invalid directions
@@ -371,7 +372,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     4. **Educational Content**: Grace notes and ornaments for classical guitar instruction
     5. **Genre-Specific Notation**: Palm mutes for metal, chucks for reggae, dynamics for classical
     
-    The enhanced system maintains full compatibility while adding professional-level 
+    The  system maintains full compatibility while adding professional-level 
     musical notation capabilities to UTF-8 guitar tablature.
 
     ## Strum Patterns (Measure Level)
@@ -628,7 +629,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     
 
     """
-    logger.info(f"Received enhanced tab generation request")
+    logger.info(f"Received  tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")
     
     try:
@@ -636,12 +637,12 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         data_dict = json.loads(tab_data)
         logger.debug(f"Parsed JSON successfully, keys: {list(data_dict.keys())}")
         
-        # Create enhanced request model for validation
+        # Create  request model for validation
         try:
-            request = EnhancedTabRequest(**data_dict)
-            logger.info(f"Enhanced request validated: '{request.title}' (attempt {request.attempt})")
+            request = TabRequest(**data_dict)
+            logger.info(f" request validated: '{request.title}' (attempt {request.attempt})")
         except Exception as validation_error:
-            logger.warning(f"Enhanced model validation failed, using basic validation: {validation_error}")
+            logger.warning(f" model validation failed, using basic validation: {validation_error}")
             # Fall back to basic validation for backwards compatibility
             if "title" not in data_dict:
                 data_dict["title"] = "Untitled"
@@ -651,26 +652,26 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         attempt_error = check_attempt_limit(attempt)
         if attempt_error:
             logger.warning(f"Attempt limit exceeded: {attempt}")
-            return EnhancedTabResponse(success=False, error=attempt_error)
+            return TabResponse(success=False, error=attempt_error)
         
-        # Enhanced validation pipeline
-        logger.debug("Starting enhanced validation pipeline")
+        #  validation pipeline
+        logger.debug("Starting  validation pipeline")
         validation_result = validate_tab_data(data_dict)
         if validation_result["isError"]:
-            logger.warning(f"Enhanced validation failed: {validation_result['message']}")
-            return EnhancedTabResponse(success=False, error=validation_result)
+            logger.warning(f" validation failed: {validation_result['message']}")
+            return TabResponse(success=False, error=validation_result)
         
-        logger.info("Enhanced validation passed successfully")
+        logger.info(" validation passed successfully")
                                             
-        # Generate enhanced tab with all new features
-        logger.debug("Starting enhanced tab generation")
+        # Generate  tab with all new features
+        logger.debug("Starting  tab generation")
         tab_output, warnings = generate_tab_output(data_dict)
         
-        # Create enhanced metadata
+        # Create  metadata
         metadata = create_tab_metadata(data_dict, warnings)
-        logger.info(f"Enhanced tab generated successfully with {len(warnings)} warnings")
+        logger.info(f" tab generated successfully with {len(warnings)} warnings")
                                                   
-        return EnhancedTabResponse(
+        return TabResponse(
             success=True, 
             content=tab_output, 
             warnings=warnings,
@@ -679,7 +680,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}")
-        return EnhancedTabResponse(
+        return TabResponse(
             success=False, 
             error={
                 "isError": True,
@@ -690,8 +691,8 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
         )
     
     except Exception as e:
-        logger.error(f"Unexpected error during enhanced tab generation: {e}")
-        return EnhancedTabResponse(
+        logger.error(f"Unexpected error during  tab generation: {e}")
+        return TabResponse(
             success=False, 
             error={
                 "isError": True,
@@ -703,7 +704,7 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
 
 def create_tab_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create enhanced metadata about the generated tab.
+    Create  metadata about the generated tab.
     
     Args:
         data_dict: Original tab data
@@ -787,19 +788,19 @@ def create_tab_metadata(data_dict: Dict[str, Any], warnings: List[Dict[str, Any]
     return metadata
 
 # ============================================================================
-# Enhanced MCP Server Startup
+#  MCP Server Startup
 # ============================================================================
 
 def main():
     """
-    Start the enhanced MCP server.
+    Start the  MCP server.
 
     This runs the FastMCP server in stdio mode for integration with
     Claude Desktop and other MCP clients, with full support for
-    enhanced guitar tab features.
+     guitar tab features.
     """
-    logger.info("Starting Enhanced Guitar Tab Generator MCP Server")
-    logger.info(f"Enhanced features available: strum patterns, dynamics, grace notes, multi-layer display")
+    logger.info("Starting  Guitar Tab Generator MCP Server")
+    logger.info(f" features available: strum patterns, dynamics, grace notes, multi-layer display")
     
     # Log available constants for debugging
     logger.debug(f"Strum directions available: {[d.value for d in StrumDirection]}")
@@ -809,9 +810,9 @@ def main():
     try:
         mcp.run()
     except KeyboardInterrupt:
-        logger.info("Enhanced MCP server stopped by user")
+        logger.info(" MCP server stopped by user")
     except Exception as e:
-        logger.error(f"Enhanced MCP server error: {e}")
+        logger.error(f" MCP server error: {e}")
         raise
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Guitar Tab Generator - Enhanced Constants and Definitions
+Guitar Tab Generator -  Constants and Definitions
 ========================================================
 
-Constants and enums for enhanced guitar tab features including
+Constants and enums for  guitar tab features including
 strum patterns, dynamics, and emphasis markings.
 """
 
@@ -109,7 +109,7 @@ VALID_EMPHASIS_VALUES = (
 )
 
 # ============================================================================
-# Enhanced Event Type Constants
+#  Event Type Constants
 # ============================================================================
 
 class EventType(Enum):
@@ -142,7 +142,7 @@ class EventType(Enum):
 
 @dataclass
 class TimeSignatureInfo:
-    """Enhanced time signature information including strum pattern support."""
+    """ time signature information including strum pattern support."""
     name: str
     beats_per_measure: int
     beat_subdivisions: int
@@ -155,8 +155,8 @@ class TimeSignatureInfo:
     is_compound: bool = False  # True for 6/8, 9/8, 12/8, etc.
     swing_feel: bool = False   # True for compound times
 
-# Enhanced time signature configurations
-ENHANCED_TIME_SIGNATURE_CONFIGS = {
+#  time signature configurations
+TIME_SIGNATURE_CONFIGS = {
     "4/4": TimeSignatureInfo(
         name="Common Time",
         beats_per_measure=4,
@@ -286,12 +286,12 @@ def is_valid_emphasis(emphasis: str) -> bool:
 
 def is_compound_time(time_signature: str) -> bool:
     """Check if a time signature uses compound (triplet-based) subdivision."""
-    config = ENHANCED_TIME_SIGNATURE_CONFIGS.get(time_signature)
+    config = TIME_SIGNATURE_CONFIGS.get(time_signature)
     return config.is_compound if config else False
 
 def get_beat_positions_for_strum_pattern(time_signature: str) -> List[float]:
     """Get the beat positions that correspond to strum pattern indices."""
-    config = ENHANCED_TIME_SIGNATURE_CONFIGS.get(time_signature)
+    config = TIME_SIGNATURE_CONFIGS.get(time_signature)
     if not config:
         return []
     return config.valid_beats
