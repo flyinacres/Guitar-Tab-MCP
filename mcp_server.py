@@ -42,9 +42,14 @@ from pydantic import BaseModel
 
 # Import  functionality
 from core import (
-    validate_tab_data, generate_tab_output, 
+    generate_tab_output, 
     check_attempt_limit as check_attempt_limit
 )
+
+from validation import (
+     validate_tab_data
+)
+
 from tab_models import TabResponse, TabRequest
 from tab_constants import (
     StrumDirection, DynamicLevel, ArticulationMark,

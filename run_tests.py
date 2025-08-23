@@ -53,7 +53,8 @@ class TabTestFramework:
         """
         try:
             # Import and use the MCP functionality directly
-            from core import validate_tab_data, generate_tab_output
+            from validation import validate_tab_data
+            from core import generate_tab_output
             
             # Validate input
             validation_result = validate_tab_data(input_data)

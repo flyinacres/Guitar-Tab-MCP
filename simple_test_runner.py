@@ -97,7 +97,8 @@ def test_three_chord_measure():
 def run_test(test_name: str, test_data: dict) -> bool:
     """Run a single test through the MCP system."""
     try:
-        from core import validate_tab_data, generate_tab_output
+        from validation import validate_tab_data
+        from core import generate_tab_output
         
         print(f"Testing: {test_name}...")
         
@@ -139,7 +140,8 @@ def run_test(test_name: str, test_data: dict) -> bool:
 def save_test_output(test_name: str, test_data: dict):
     """Save test output for visual inspection."""
     try:
-        from core import validate_tab_data, generate_tab_output
+        from validation import validate_tab_data
+        from core import generate_tab_output
         
         validation = validate_tab_data(test_data)
         if validation["isError"]:
