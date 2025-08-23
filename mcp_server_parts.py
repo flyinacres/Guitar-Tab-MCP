@@ -83,8 +83,30 @@ def generate_guitar_tab(tab_data: str) -> EnhancedTabResponse:
     Returns:
         EnhancedTabResponse with generated tab content, warnings, and metadata
         
-    ## NEW: Song Parts/Sections System
     
+    ## QUICK SMOKE TESTS (Gold Standard)
+
+    These tests must ALWAYS work. Run these after any code changes:
+
+    ### Test 1: Basic Chord with Standard Strum
+    ```json
+    {
+      "title": "Basic Test",
+      "timeSignature": "4/4",
+      "measures": [
+        {
+          "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+          "events": [
+            {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+              {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+            ]}
+          ]
+        }
+      ]
+    }
+    ```
+    Expected: Single G chord with `D   D   D U D U` strum pattern
+
     ### Parts-Based Song Structure
     Define reusable song sections with automatic numbering:
     ```json

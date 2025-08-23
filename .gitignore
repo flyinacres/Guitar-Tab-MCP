@@ -3,3 +3,5 @@ guitar_tab_env/
 __pycache__/
 *.pyc
 *.log
+test_outputs/
+
