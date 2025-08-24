@@ -428,6 +428,8 @@ def place_measure_events(
         List of warning dictionaries for formatting issues
     """
     warnings = []
+    # Grace notes should always be followed by a target note, which should not be placed
+    graceNotePlaced = False
 
     logger.debug(f"Placing events for measure {measure_number} (offset {measure_offset})")
 
@@ -437,17 +439,24 @@ def place_measure_events(
         # Skip annotation events - they're handled in display layers
         if event_type in ["palmMute", "chuck", "strumPattern", "dynamic"]:
             logger.debug(f"Skipping {event_type} - handled in display layers")
+            graceNotePlaced = False
             continue
 
         # Handle grace notes specially
         if event_type == "graceNote":
             grace_warnings = place_grace_note_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
             warnings.extend(grace_warnings)
+            graceNotePlaced = True
             continue
 
+        if event_type == "note" and graceNotePlaced:
+            graceNotePlaced = False
+            continue
+        
         # Handle regular musical events
         event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
         warnings.extend(event_warnings)
+        graceNotePlaced = False
 
     logger.debug(f"Placed events for measure {measure_number}, generated {len(warnings)} warnings")
     return warnings

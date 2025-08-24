@@ -306,16 +306,11 @@ def generate_tab(tab_data: str) -> TabResponse:
     **Articulations:** >, -, ., staccato markings
 
     ### Grace Notes
+    Note that the grace note must always be followed by a target note!
     Add ornamental grace notes with clean superscript notation:
     ```json
-    {
-      "type": "graceNote",
-      "string": 1,
-      "beat": 2.0,
-      "fret": 5,
-      "graceFret": 3,
-      "graceType": "acciaccatura"
-    }
+          {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "graceType": "acciaccatura"},
+          {"type": "note", "string": 1, "beat": 1.0, "fret": 5},
     ```
     Output:
 
@@ -501,16 +496,21 @@ def generate_tab(tab_data: str) -> TabResponse:
     {
       "title": "Power Chord Rock",
       "timeSignature": "4/4",
-      "measures": [
-        {
-          "events": [
-            {"type": "strumPattern", "pattern": ["D","","","D","","U","D","U"]},
-            {"type": "chord", "beat": 1.0, "chordName": "E5", "emphasis": "f", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
-            {"type": "chord", "beat": 2.5, "chordName": "E5", "emphasis": ">", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
-            {"type": "palmMute", "beat": 3.0, "duration": 1.0, "intensity": "heavy"}
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "events": [
+                {"type": "strumPattern", "pattern": ["D","","","D","","U","D","U"]},
+                {"type": "chord", "beat": 1.0, "chordName": "E5", "emphasis": "f", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
+                {"type": "chord", "beat": 2.5, "chordName": "E5", "emphasis": ">", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
+                {"type": "palmMute", "beat": 3.0, "duration": 1.0, "intensity": "heavy"}
+              ]
+            }
           ]
         }
-      ]
+        },
+        "structure": ["Main"]
     }
     ```
 
@@ -519,15 +519,20 @@ def generate_tab(tab_data: str) -> TabResponse:
     {
       "title": "Classical Ornaments",
       "timeSignature": "3/4",
-      "measures": [
-        {
-          "events": [
-            {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "emphasis": "p"},
-            {"type": "note", "string": 1, "beat": 2.0, "fret": 7, "emphasis": "cresc."},
-            {"type": "bend", "string": 1, "beat": 3.0, "fret": 9, "semitones": 0.5, "vibrato": true, "emphasis": "f"}
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "events": [
+                {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "emphasis": "p"},
+                {"type": "note", "string": 1, "beat": 2.0, "fret": 7, "emphasis": "cresc."},
+                {"type": "bend", "string": 1, "beat": 3.0, "fret": 9, "semitones": 0.5, "vibrato": true, "emphasis": "f"}
+              ]
+            }
           ]
         }
-      ]
+        },
+        "structure": ["Main"]
     }
     ```
 
@@ -536,14 +541,19 @@ def generate_tab(tab_data: str) -> TabResponse:
     {
       "title": "Jazz Changes",
       "timeSignature": "4/4",
-      "measures": [
-        {
-          "events": [
-            {"type": "chord", "beat": 1.0, "chordName": "Cmaj7", "emphasis": "mp", "frets": [{"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 0}]},
-            {"type": "chord", "beat": 3.0, "chordName": "Am7", "emphasis": "mf", "frets": [{"string": 5, "fret": 0}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 1}]}
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "events": [
+                {"type": "chord", "beat": 1.0, "chordName": "Cmaj7", "emphasis": "mp", "frets": [{"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 0}]},
+                {"type": "chord", "beat": 3.0, "chordName": "Am7", "emphasis": "mf", "frets": [{"string": 5, "fret": 0}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 1}]}
+              ]
+            }
           ]
         }
-      ]
+        },
+        "structure": ["Main"]
     }
     ```
 
@@ -592,19 +602,24 @@ def generate_tab(tab_data: str) -> TabResponse:
     ```json
     {
       "timeSignature": "4/4",
-      "measures": [
-        {
-          "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
-          "events": [{"type": "chord", ...}]
-        },
-        {
-          "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
-          "events": [{"type": "chord", ...}]
-        },
-        {
-          "events": [{"type": "chord", ...}]  // No strum pattern
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+              "events": [{"type": "chord", ...}]
+            },
+            {
+              "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+              "events": [{"type": "chord", ...}]
+            },
+            {
+              "events": [{"type": "chord", ...}]  // No strum pattern
+            }
+          ]
         }
-      ]
+        },
+        "structure": ["Main"]
     }
 
     ## Time Signature Support
@@ -711,18 +726,23 @@ def generate_tab(tab_data: str) -> TabResponse:
       "title": "Ukulele Song",
       "instrument": "ukulele",
       "timeSignature": "4/4",
-      "measures": [
-        {
-          "events": [
-            {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
-              {"string": 4, "fret": 0},
-              {"string": 3, "fret": 0},
-              {"string": 2, "fret": 0},
-              {"string": 1, "fret": 3}
-            ]}
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "events": [
+                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
+                  {"string": 4, "fret": 0},
+                  {"string": 3, "fret": 0},
+                  {"string": 2, "fret": 0},
+                  {"string": 1, "fret": 3}
+                ]}
+              ]
+            }
           ]
         }
-      ]
+        },
+        "structure": ["Main"]
     }
     Instrument Field
 
