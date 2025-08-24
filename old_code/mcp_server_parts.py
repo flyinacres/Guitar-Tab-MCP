@@ -509,67 +509,6 @@ def generate_guitar_tab(tab_data: str) -> TabResponse:
             }
         )
 
-@mcp.tool()
-def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
-    """
-    Analyze song structure without generating tablature.
-    
-    Useful for validating parts format and understanding song organization
-    before generating the full tab.
-    
-    Args:
-        tab_data: Guitar tab specification in parts format
-        
-    Returns:
-        Dictionary with detailed song structure analysis
-    """
-    logger.info("Received song structure analysis request")
-    
-    try:
-        data_dict = json.loads(tab_data)
-        request = TabRequest(**data_dict)
-        
-        if not (request.parts and request.structure):
-            return {
-                "error": "Song structure analysis requires parts format (parts + structure)",
-                "suggestion": "Use parts format with 'parts' object and 'structure' array"
-            }
-        
-        analysis = analyze_song_structure(request)
-        logger.info(f"Generated structure analysis for '{request.title}': {analysis['total_part_instances']} instances")
-        
-        # Add additional analysis
-        analysis["validation"] = validate_tab_data(data_dict)
-        analysis["title"] = request.title
-        analysis["inputValid"] = not analysis["validation"]["isError"]
-        
-        return {
-            "success": True,
-            "analysis": analysis,
-            "partsPreview": {
-                part_name: {
-                    "measureCount": len(part_def.measures),
-                    "description": part_def.description,
-                    "hasTempoChange": part_def.tempo_change is not None,
-                    "hasKeyChange": part_def.key_change is not None
-                }
-                for part_name, part_def in request.parts.items()
-            }
-        }
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing error in structure analysis: {e}")
-        return {
-            "success": False,
-            "error": f"Invalid JSON format: {str(e)}"
-        }
-    except Exception as e:
-        logger.error(f"Error in structure analysis: {e}")
-        return {
-            "success": False,
-            "error": f"Analysis error: {str(e)}"
-        }
-
 
 # ============================================================================
 #  MCP Server Startup with Parts System
