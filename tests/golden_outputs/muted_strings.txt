@@ -1,0 +1,22 @@
+# Muted Strings Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+  D5 (muted)
+          >
+  1 & 2 & 3 & 4 &  
+|-2-------x-------|
+|-3---------------|
+|-2---------------|
+|-0---------------|
+|-x---------------|
+|-x---------------|
+  D   D   D U D U
+

@@ -1,0 +1,21 @@
+# Grace Notes - Acciaccatura Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+          p
+  1 & 2 & 3 & 4 &  
+|-55--------------|
+|---------77------|
+|-----------------|
+|-----------------|
+|-----------------|
+|-----------------|
+  D   D   D U D U
+

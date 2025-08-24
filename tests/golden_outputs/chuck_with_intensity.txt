@@ -1,0 +1,22 @@
+# Chuck with Intensity Levels Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+      Em      G
+  XH      XL
+  1 & 2 & 3 & 4 &  
+|-----------------|
+|-----------------|
+|-----------------|
+|-----2-----------|
+|-----2-------2---|
+|-------------3---|
+      D       D U
+

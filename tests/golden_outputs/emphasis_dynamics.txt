@@ -1,0 +1,22 @@
+# Emphasis and Dynamics Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+  G       Em
+  f   p   mf  >
+  1 & 2 & 3 & 4 &  
+|-3---5-------7---|
+|-----------------|
+|-----------------|
+|---------2-------|
+|-2-------2-------|
+|-3---------------|
+  D   D   D U D U
+

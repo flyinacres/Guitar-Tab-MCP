@@ -109,18 +109,23 @@ def generate_tab(tab_data: str) -> TabResponse:
     ### Test 1: Basic Chord with Standard Strum
     ```json
     {
-      "title": "Basic Test",
+      "title": "Basic Chord Test",
+      "shouldFail": False,
       "timeSignature": "4/4",
-      "measures": [
-        {
-          "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-          "events": [
-            {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-              {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-            ]}
-          ]
-        }
-      ]
+      "parts": {
+          "Main": {
+              "measures": [
+                  {
+                      "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+                      "events": [
+                          {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                              {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                          ]}
+                      ]
+                  }
+              ]
+          }
+      }
     }
     ```
     Expected: Single G chord with `D   D   D U D U` strum pattern
@@ -215,13 +220,25 @@ def generate_tab(tab_data: str) -> TabResponse:
     Create strum direction indicators below the tablature:
     ```json
     {
-      "type": "strumPattern",
-      "startBeat": 1.0,
-      "pattern": ["D", "U", "", "D", "U", "", "D", "U"],
-      "measures": 1
+    "title": "Strum Pattern",
+    "shouldFail": False,
+    "timeSignature": "4/4",
+    "parts": {
+        "Main": {
+            "measures": [
+                {
+                    "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+                    "events": [
+                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
+                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
+                        ]}
+                    ]
+                }
+            ]
+        }
     }
     ```
-    **Output:** Shows "D U  D U  D U" below the tab content
+    **Output:** Shows "D   D U   U D U" below the tab content
 
     STRUM PATTERN GUIDELINES FOR LLM USAGE:
 
@@ -239,13 +256,24 @@ def generate_tab(tab_data: str) -> TabResponse:
 
     Example Correct Usage:
     {
-      "strumPattern": ["", "", "D", "", "D", "", "D", "U"],  // Chuck on 1, strums on 2,3,4&
-      "events": [
-        {"type": "chuck", "beat": 1.0},
-        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [...]}
-      ]
+    "title": "Strum Pattern",
+    "shouldFail": False,
+    "timeSignature": "4/4",
+    "parts": {
+        "Main": {
+            "measures": [
+                {
+                    "strumPattern": ["", "", "D", "", "D", "", "D", "U"],  // Chuck on 1, strums on 2,3,4&
+                    "events": [
+                        {"type": "chuck", "beat": 1.0},
+                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
+                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
+                        ]}
+                    ]
+                }
+            ]
+        }
     }
-
 
     CHORD PLACEMENT AND STRUM PATTERN ALIGNMENT:
 

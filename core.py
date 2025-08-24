@@ -78,67 +78,6 @@ def generate_strum_line(measures: List[Dict[str, Any]],
 # Annotation System Functions
 # ============================================================================
 
-def process_annotations(measures: List[Dict[str, Any]], num_measures: int,
-                        time_signature: str = "4/4") -> Tuple[str, str]:
-    """
-    Process chord names and annotations (palm mutes, chucks) for display above tab.
-
-    This function creates two annotation lines that appear above the beat markers:
-    1. Chord line: Shows chord names (e.g., "G", "Em", "C") above chord events
-    2. Annotation line: Shows palm mutes (PM---), chucks (X), and other techniques
-
-    The positioning system ensures annotations align exactly with their corresponding
-    musical events using the same character position calculations as the tab content.
-
-    Args:
-        measures: List of measure objects containing events
-        num_measures: Number of measures to process (typically 1-4 per group)
-
-    Returns:
-        Tuple of (chord_line, annotation_line) - two formatted strings ready for display
-
-    Example output:
-        annotation_line: " PM------------ X    PM---"
-        chord_line:      " G              Em        "
-    """
-    # Calculate total character width (18 chars per measure + leading space)
-    total_width = 1 + (num_measures * 18)
-
-    # Initialize annotation arrays
-    chord_chars = [' '] * total_width
-    annotation_chars = [' '] * total_width
-
-    # Process each measure
-    for measure_idx, measure in enumerate(measures):
-        for event in measure.get("events", []):
-            event_type = event.get("type")
-            beat = event.get("beat") or event.get("startBeat")
-
-            if beat is None:
-                continue
-
-            char_position = calculate_char_position(beat, measure_idx, time_signature)
-
-            # Process chord names
-            if event_type == "chord" and "chordName" in event:
-                chord_name = event["chordName"]
-                place_annotation_text(chord_chars, char_position, chord_name, total_width)
-
-            # Process palm mutes
-            elif event_type == "palmMute":
-                duration = event.get("duration", 1.0)
-                pm_text = generate_palm_mute_notation(duration)
-                place_annotation_text(annotation_chars, char_position, pm_text, total_width)
-
-            # Process chucks
-            elif event_type == "chuck":
-                place_annotation_text(annotation_chars, char_position, "X", total_width)
-
-    # Convert character arrays to strings with labels
-    chord_line = "".join(chord_chars).rstrip()
-    annotation_line = "".join(annotation_chars).rstrip()
-
-    return chord_line, annotation_line
 
 def place_annotation_text(char_array: List[str], position: int, text: str, max_width: int):
     """
@@ -165,34 +104,6 @@ def place_annotation_text(char_array: List[str], position: int, text: str, max_w
             # Only place if the position is empty (space) to avoid overwrites
             if char_array[target_pos] == ' ':
                 char_array[target_pos] = char
-
-def generate_palm_mute_notation(duration: float) -> str:
-    """
-    Generate palm mute notation with appropriate number of dashes.
-
-    Palm mutes are displayed as "PM" followed by dashes that indicate the
-    duration of the muting effect. This provides visual feedback about
-    how long to maintain the palm mute technique.
-
-    The dash calculation uses approximately 2 characters per beat to provide
-    reasonable visual representation within the UTF-8 tab format constraints.
-
-    Args:
-        duration: Duration in beats (e.g., 2.0 = 2 beats, 1.5 = beat and a half)
-
-    Returns:
-        String like "PM-" (short), "PM----" (medium), or "PM---------" (long)
-
-    Examples:
-        duration=0.5 ? "PM-"
-        duration=1.0 ? "PM--"
-        duration=2.0 ? "PM----"
-        duration=3.5 ? "PM-------"
-    """
-    # Calculate number of dashes based on duration
-    # Each beat gets approximately 2 characters worth of dashes
-    num_dashes = max(1, int(duration * 2))
-    return "PM" + "-" * num_dashes
 
 
 def generate_measure_group(

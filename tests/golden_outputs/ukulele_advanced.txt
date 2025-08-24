@@ -1,0 +1,21 @@
+# Ukulele Advanced Techniques
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+  C
+  mf
+          XL  PM(M)
+  1 & 2 & 3 & 4 &  
+|-3---0h2---------|
+|-0---------------|
+|-0---------------|
+|-0---------------|
+  D   D   D U D U
+

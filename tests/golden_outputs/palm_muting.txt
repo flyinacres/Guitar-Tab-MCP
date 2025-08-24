@@ -1,0 +1,22 @@
+# Palm Muting with Intensity Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+  E5      A5
+  PM(H)----M(L)--
+  1 & 2 & 3 & 4 &  
+|-----------------|
+|-----------------|
+|-----------------|
+|---------2-------|
+|-2-------0-------|
+|-0---------------|
+  D   D   D U D U
+
