@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-Guitar Tab Generator -  Core Implementation
+Tab Generator -  Core Implementation
 ==================================================
 
  core functionality for converting structured JSON guitar tab specifications
@@ -18,6 +18,7 @@ Key Enhancements:
 import sys
 import logging
 from typing import Dict, List, Any, Tuple, Optional
+from tab_models import NotationEvent
 
 
 from tab_constants import (
@@ -73,37 +74,6 @@ def generate_strum_line(measures: List[Dict[str, Any]],
 
     return "".join(strum_chars).rstrip()
 
-
-# ============================================================================
-# Annotation System Functions
-# ============================================================================
-
-
-def place_annotation_text(char_array: List[str], position: int, text: str, max_width: int):
-    """
-    Place annotation text at specified position, avoiding overwrites.
-
-    This is a utility function for positioning text within the annotation lines.
-    It ensures that:
-    - Text doesn't extend beyond the line boundaries
-    - Existing text isn't overwritten (first-come, first-served basis)
-    - Annotations align with their corresponding musical events
-
-    Args:
-        char_array: Mutable list of characters representing the annotation line
-        position: Starting character position (calculated using calculate_char_position)
-        text: Text to place (e.g., "G", "PM---", "X")
-        max_width: Maximum line width to prevent array bounds errors
-
-    Side Effects:
-        Modifies char_array in place by setting characters at specified positions
-    """
-    for i, char in enumerate(text):
-        target_pos = position + i
-        if target_pos < max_width and target_pos >= 0:
-            # Only place if the position is empty (space) to avoid overwrites
-            if char_array[target_pos] == ' ':
-                char_array[target_pos] = char
 
 
 def generate_measure_group(
@@ -247,6 +217,7 @@ def process_measure_for_display_layers(
     """
     for event in measure.get("events", []):
         event_type = event.get("type")
+        new_event = NotationEvent.from_dict(event)
         beat = event.get("beat") or event.get("startBeat")
 
         if beat is None:
@@ -257,9 +228,8 @@ def process_measure_for_display_layers(
         # Process different event types for appropriate layers
         if event_type == "chord":
             # Chord names layer
-            chord_name = event.get("chordName")
-            if chord_name:
-                place_annotation_text(layers[DisplayLayer.CHORD_NAMES], char_position, chord_name, total_width)
+            if new_event.chordName:
+                place_annotation_text(layers[new_event.layer], char_position, new_event.chordName, total_width)
 
             # Emphasis on chords goes to dynamics layer
             emphasis = event.get("emphasis")
@@ -273,139 +243,18 @@ def process_measure_for_display_layers(
                 place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, emphasis, total_width)
 
         elif event_type == "palmMute":
-            duration = event.get("duration", 1.0)
-            intensity = event.get("intensity", "")
-            pm_text = generate_palm_mute_notation(duration, intensity)
-            place_annotation_text(layers[DisplayLayer.ANNOTATIONS], char_position, pm_text, total_width)
+            place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
 
         elif event_type == "chuck":
-            intensity = event.get("intensity", "")
-            chuck_text = "X" + (intensity[0].upper() if intensity else "")  # X, XL, XM, XH
-            place_annotation_text(layers[DisplayLayer.ANNOTATIONS], char_position, chuck_text, total_width)
+            place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
 
         elif event_type == "dynamic":
-            dynamic = event.get("dynamic")
-            duration = event.get("duration")
-            if dynamic:
-                dynamic_text = generate_dynamic_notation(dynamic, duration)
-                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, dynamic_text, total_width)
+            if new_event.dynamic:
+                place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
 
         elif event_type == "strumPattern":
-            # Process strum pattern
-            pattern = event.get("pattern", [])
-            measures_spanned = event.get("measures", 1)
-            start_beat = event.get("startBeat", 1.0)
+            new_event.process_strum_pattern(measure_idx, time_signature, layers[DisplayLayer.STRUM_PATTERN], total_width)
 
-            process_strum_pattern(
-                pattern, measures_spanned, start_beat, measure_idx,
-                time_signature, layers[DisplayLayer.STRUM_PATTERN], total_width
-            )
-
-def generate_palm_mute_notation(duration: float, intensity: str = "") -> str:
-    """
-    Generate  palm mute notation with intensity indicators.
-
-    Args:
-        duration: Duration in beats
-        intensity: Intensity level ("light", "medium", "heavy")
-
-    Returns:
-        String like "PM--", "PM(L)--", "PM(H)----"
-    """
-    base = "PM"
-
-    # Add intensity indicator
-    if intensity:
-        intensity_map = {"light": "(L)", "medium": "(M)", "heavy": "(H)"}
-        base += intensity_map.get(intensity, "")
-
-    # Add duration dashes
-    num_dashes = max(1, int(duration * 2))
-    return base + "-" * num_dashes
-
-def generate_dynamic_notation(dynamic: str, duration: Optional[float] = None) -> str:
-    """
-    Generate dynamic notation with optional duration indicators.
-
-    Args:
-        dynamic: Dynamic marking (pp, p, mp, mf, f, ff, cresc., etc.)
-        duration: Optional duration for extended markings
-
-    Returns:
-        String like "f", "cresc.---", "dim.--"
-    """
-    if dynamic in ["cresc.", "dim.", "<", ">"]:
-        # Extended markings get duration dashes
-        if duration:
-            num_dashes = max(1, int(duration * 2))
-            return dynamic + "-" * num_dashes
-        else:
-            return dynamic + "---"  # Default length
-
-    # Standard dynamics are just the marking
-    return dynamic
-
-def process_strum_pattern(
-    pattern: List[str],
-    measures_spanned: int,
-    start_beat: float,
-    current_measure: int,
-    time_signature: str,
-    strum_chars: List[str],
-    total_width: int
-):
-    """
-    Process strum pattern and place it in the strum pattern layer.
-
-    Args:
-        pattern: List of strum directions ["D", "U", "", ...]
-        measures_spanned: How many measures this pattern covers
-        start_beat: Starting beat of the pattern
-        current_measure: Current measure index (0-based)
-        time_signature: Time signature string
-        strum_chars: Character array for strum pattern layer
-        total_width: Total width of the display
-    """
-    config = get_time_signature_config(time_signature)
-    positions_per_measure = len(config["valid_beats"])
-
-    logger.debug(f"Processing strum pattern: {len(pattern)} positions, {measures_spanned} measures")
-
-    # For now, assume the pattern starts at the beginning of the measure group
-    pattern_start_measure = 0  # Relative to current measure group
-
-    # Check if current measure is covered by this pattern
-    if current_measure < pattern_start_measure or current_measure >= pattern_start_measure + measures_spanned:
-        logger.debug(f"Measure {current_measure} not covered by pattern (starts at {pattern_start_measure}, spans {measures_spanned})")
-        return
-
-    measure_offset_in_pattern = current_measure - pattern_start_measure
-    pattern_start_idx = measure_offset_in_pattern * positions_per_measure
-    pattern_end_idx = pattern_start_idx + positions_per_measure
-
-    # Extract the pattern slice for this measure
-    measure_pattern = pattern[pattern_start_idx:pattern_end_idx]
-
-   # Validate pattern slice bounds
-    if pattern_start_idx >= len(pattern):
-        logger.warning(f"Pattern start index {pattern_start_idx} exceeds pattern length {len(pattern)}")
-        return
-
-    logger.debug(f"Measure {current_measure}: using pattern slice [{pattern_start_idx}:{pattern_end_idx}] = {measure_pattern}")
-
-    # Place each strum direction at its corresponding beat position
-    for i, direction in enumerate(measure_pattern):
-        if direction:  # Skip empty positions
-            beat_idx = i
-            if beat_idx < len(config["valid_beats"]):
-                beat = config["valid_beats"][beat_idx]
-                char_position = calculate_char_position(beat, current_measure, time_signature)
-
-                if char_position < total_width:
-                    strum_chars[char_position] = direction
-                    logger.debug(f"Placed strum '{direction}' at position {char_position} for beat {beat}")
-                else:
-                    logger.warning(f"Character position {char_position} exceeds total width {total_width}")
 
 def place_measure_events(
     measure: Dict[str, Any],
@@ -725,6 +574,12 @@ def place_event_on_tab(
 #  Utility Functions
 # ============================================================================
 
+def place_annotation_text_wEvent(event: NotationEvent, char_array: List[str],):
+    {
+        #layerToUse = layers[event.layer]
+        #place_annotation_text(char_array, char_position, pm_text, total_width)
+    }
+
 def place_annotation_text(
     char_array: List[str],
     position: int,
@@ -733,14 +588,22 @@ def place_annotation_text(
     allow_overlap: bool = False
 ):
     """
-     version of place_annotation_text with overlap handling.
+    Place annotation text at specified position, avoiding overwrites.
+
+    This is a utility function for positioning text within the annotation lines.
+    It ensures that:
+    - Text doesn't extend beyond the line boundaries
+    - Existing text isn't overwritten (first-come, first-served basis)
+    - Annotations align with their corresponding musical events
 
     Args:
-        char_array: Mutable list of characters
-        position: Starting position
-        text: Text to place
-        max_width: Maximum width
-        allow_overlap: Whether to allow overwriting existing text
+        char_array: Mutable list of characters representing the annotation line
+        position: Starting character position (calculated using calculate_char_position)
+        text: Text to place (e.g., "G", "PM---", "X")
+        max_width: Maximum line width to prevent array bounds errors
+
+    Side Effects:
+        Modifies char_array in place by setting characters at specified positions
     """
     for i, char in enumerate(text):
         target_pos = position + i

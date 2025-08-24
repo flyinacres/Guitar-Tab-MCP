@@ -1,4 +1,4 @@
-# Guitar Tab Generator with Parts System
+# Tab Generator with Parts System
 
 A powerful tool for generating UTF-8 guitar and ukulele tablature from structured JSON input. Features a complete song structure system with named parts, automatic numbering, and comprehensive musical notation support. Works as both an MCP server for AI integration and a standalone command-line tool.
 
@@ -379,25 +379,6 @@ Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
 [identical to Chorus 1]
 ```
 
-## Backwards Compatibility
-
-Legacy format with direct `measures` array is still supported:
-
-```json
-{
-  "title": "Legacy Format",
-  "timeSignature": "4/4",
-  "measures": [
-    {
-      "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-      "events": [
-        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [...]}
-      ]
-    }
-  ]
-}
-```
-
 ## Testing
 
 ### Quick Tests
@@ -502,7 +483,6 @@ The tool provides structured error messages optimized for both human developers 
 
 - Ensure all structure references exist in parts
 - Use proper parts format: `"parts": {...}, "structure": [...]`
-- Don't mix legacy `measures` format with parts format
 
 **Tab alignment issues:**
 

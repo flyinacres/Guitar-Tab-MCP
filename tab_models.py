@@ -9,9 +9,13 @@ Updated Pydantic models compatible with V2 syntax using:
 - Updated Field syntax and validation patterns
 """
 
-from typing import Dict, List, Any, Optional, Union, Literal
+import sys
+import logging
+from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 from enum import Enum
+from tab_constants import DisplayLayer
+from time_signatures import ( get_time_signature_config, calculate_char_position )
 
 # Import our constants
 from tab_constants import (
@@ -20,14 +24,48 @@ from tab_constants import (
     MAX_SEMITONES, MIN_SEMITONES, get_strum_positions_for_time_signature
 )
 
+# Configure logging to stderr only (stdout reserved for MCP protocol)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stderr
+)
+logger = logging.getLogger(__name__)
+
+
+
 # ============================================================================
 # Base Event Models
 # ============================================================================
 
-class BaseEvent(BaseModel):
-    """Base class for all guitar tab events with common properties."""
-    type: str
+class NotationEvent(BaseModel):
+    """Base class for all tab events with common properties."""
     emphasis: Optional[str] = Field(None, description="Dynamic or articulation marking")
+    _registry: ClassVar[Dict[str, Type]] = {}
+
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "NotationEvent":
+        """
+        Factory method: build the right Event subclass from a dict.
+        Looks up the 'type' field and delegates to the proper subclass.
+        """
+        event_type = data.get("type")
+        subclass = cls._registry.get(event_type)
+        if not subclass:
+            raise ValueError(f"Unknown event type: {event_type}")
+
+        # Use Pydantic validation when constructing
+        return subclass(**{k: v for k, v in data.items() if k != "type"})
+    
+    def __init_subclass__(cls, type=None, **kwargs):
+        """
+        Called automatically by Python whenever a subclass is defined.
+        Registers the subclass under the provided `key`.
+        """
+        super().__init_subclass__(**kwargs)
+        cls._registry[type] = cls
+        cls._type = type   # Store the key on the class (useful for debugging)
     
     @field_validator('emphasis')
     @classmethod
@@ -36,7 +74,7 @@ class BaseEvent(BaseModel):
             raise ValueError(f"Invalid emphasis '{v}'. Valid values: {VALID_EMPHASIS_VALUES}")
         return v
 
-class MusicalEvent(BaseEvent):
+class MusicalEvent(NotationEvent):
     """Base class for events that occur at specific beats."""
     beat: Optional[float] = None
     startBeat: Optional[float] = None  # For techniques that span time
@@ -52,13 +90,14 @@ class MusicalEvent(BaseEvent):
 #  Musical Events
 # ============================================================================
 
-class Note(MusicalEvent):
+class Note(MusicalEvent, type="note"):
     """ note event with dynamics and articulation."""
-    type: Literal["note"] = "note"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     beat: float
     fret: Union[int, str]  # int for fret number, "x" for muted
     vibrato: bool = False
+    # This is here so emphasis goes onto the proper layer
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
     
     @field_validator('fret')
     @classmethod
@@ -71,13 +110,13 @@ class Note(MusicalEvent):
                 raise ValueError(f"Fret must be 0-{MAX_FRET} or 'x' for muted")
         return v
 
-class Chord(MusicalEvent):
+class Chord(MusicalEvent, type="chord"):
     """ chord event with dynamics and emphasis."""
-    type: Literal["chord"] = "chord"
     beat: float
     chordName: Optional[str] = None
     frets: List[Dict[str, Union[int, str]]]  # [{"string": 1, "fret": 3}, ...]
-    
+    layer: DisplayLayer = DisplayLayer.CHORD_NAMES
+
     @field_validator('frets')
     @classmethod
     def validate_frets(cls, v):
@@ -103,33 +142,33 @@ class Chord(MusicalEvent):
 # Technique Events
 # ============================================================================
 
-class Slide(MusicalEvent):
+class Slide(MusicalEvent, type="slide"):
     """ slide with emphasis support."""
-    type: Literal["slide"] = "slide"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     startBeat: float
     fromFret: int = Field(..., ge=0, le=MAX_FRET)
     toFret: int = Field(..., ge=0, le=MAX_FRET)
     direction: Literal["up", "down"]
     vibrato: bool = False
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
 
-class Bend(MusicalEvent):
+class Bend(MusicalEvent, type="bend"):
     """ bend with emphasis and vibrato."""
-    type: Literal["bend"] = "bend"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     beat: float
     fret: int = Field(..., ge=0, le=MAX_FRET)
     semitones: float = Field(..., ge=MIN_SEMITONES, le=MAX_SEMITONES)
     vibrato: bool = False
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
 
-class HammerOn(MusicalEvent):
+class HammerOn(MusicalEvent, type="hammerOn"):
     """ hammer-on with emphasis."""
-    type: Literal["hammerOn"] = "hammerOn"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     startBeat: float
     fromFret: int = Field(..., ge=0, le=MAX_FRET)
     toFret: int = Field(..., ge=0, le=MAX_FRET)
     vibrato: bool = False
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
     
     @field_validator('toFret')
     @classmethod
@@ -138,14 +177,14 @@ class HammerOn(MusicalEvent):
             raise ValueError("Hammer-on toFret must be higher than fromFret")
         return v
 
-class PullOff(MusicalEvent):
+class PullOff(MusicalEvent, type="pullOff"):
     """ pull-off with emphasis."""
-    type: Literal["pullOff"] = "pullOff"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     startBeat: float
     fromFret: int = Field(..., ge=0, le=MAX_FRET)
     toFret: int = Field(..., ge=0, le=MAX_FRET)
     vibrato: bool = False
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
     
     @field_validator('toFret')
     @classmethod
@@ -158,12 +197,12 @@ class PullOff(MusicalEvent):
 # New Event Types
 # ============================================================================
 
-class StrumPatternEvent(BaseEvent):
+class StrumPatternEvent(NotationEvent, type="strumPattern"):
     """Strum pattern that can span multiple measures."""
-    type: Literal["strumPattern"] = "strumPattern"
     startBeat: float = 1.0
     pattern: List[str]  # Array of strum directions: ["D", "U", "", "D", ...]
     measures: int = Field(default=1, ge=1, le=8)  # How many measures this pattern spans
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
     
     @field_validator('pattern')
     @classmethod
@@ -173,48 +212,153 @@ class StrumPatternEvent(BaseEvent):
             if direction not in valid_values:
                 raise ValueError(f"Invalid strum direction '{direction}'. Use 'D', 'U', or ''")
         return v
+    
+    def process_strum_pattern(
+        self,
+        current_measure: int,
+        time_signature: str,
+        strum_chars: List[str],
+        total_width: int
+    ):
+        """
+        Process strum pattern and place it in the strum pattern layer.
 
-class GraceNoteEvent(MusicalEvent):
+        Args:
+            current_measure: Current measure index (0-based)
+            time_signature: Time signature string
+            strum_chars: Character array for strum pattern layer
+            total_width: Total width of the display
+        """
+        config = get_time_signature_config(time_signature)
+        positions_per_measure = len(config["valid_beats"])
+
+        logger.debug(f"Processing strum pattern: {len(self.pattern)} positions, {self.measures} measures")
+
+        # For now, assume the pattern starts at the beginning of the measure group
+        pattern_start_measure = 0  # Relative to current measure group
+
+        # Check if current measure is covered by this pattern
+        if current_measure < pattern_start_measure or current_measure >= pattern_start_measure + self.measures:
+            logger.debug(f"Measure {current_measure} not covered by pattern (starts at {pattern_start_measure}, spans {self.measures})")
+            return
+
+        measure_offset_in_pattern = current_measure - pattern_start_measure
+        pattern_start_idx = measure_offset_in_pattern * positions_per_measure
+        pattern_end_idx = pattern_start_idx + positions_per_measure
+
+        # Extract the pattern slice for this measure
+        measure_pattern = self.pattern[pattern_start_idx:pattern_end_idx]
+
+    # Validate pattern slice bounds
+        if pattern_start_idx >= len(self.pattern):
+            logger.warning(f"Pattern start index {pattern_start_idx} exceeds pattern length {len(self.pattern)}")
+            return
+
+        logger.debug(f"Measure {current_measure}: using pattern slice [{pattern_start_idx}:{pattern_end_idx}] = {measure_pattern}")
+
+        # Place each strum direction at its corresponding beat position
+        for i, direction in enumerate(measure_pattern):
+            if direction:  # Skip empty positions
+                beat_idx = i
+                if beat_idx < len(config["valid_beats"]):
+                    beat = config["valid_beats"][beat_idx]
+                    char_position = calculate_char_position(beat, current_measure, time_signature)
+
+                    if char_position < total_width:
+                        strum_chars[char_position] = direction
+                        logger.debug(f"Placed strum '{direction}' at position {char_position} for beat {beat}")
+                    else:
+                        logger.warning(f"Character position {char_position} exceeds total width {total_width}")
+
+
+class GraceNoteEvent(MusicalEvent, type="graceNote"):
     """Grace note - small note played quickly before main note."""
-    type: Literal["graceNote"] = "graceNote"
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     beat: float  # Beat where the grace note leads into
     fret: Union[int, str]
     graceFret: Union[int, str]  # The grace note fret
     graceType: Literal["acciaccatura", "appoggiatura"] = "acciaccatura"
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
 
-class DynamicEvent(BaseEvent):
+class DynamicEvent(NotationEvent, type="dynamic"):
     """Standalone dynamic marking that affects following notes/chords."""
-    type: Literal["dynamic"] = "dynamic"
     beat: float
     dynamic: str = Field(..., description="Dynamic level (pp, p, mp, mf, f, ff)")
     duration: Optional[float] = None  # How long this dynamic lasts
+    layer: DisplayLayer = DisplayLayer.DYNAMICS
+    possible_dynamics: List = ["cresc.", "dim.", "<", ">"]
     
     @field_validator('dynamic')
     @classmethod
     def validate_dynamic(cls, v):
-        valid_dynamics = [d.value for d in DynamicLevel] + ["cresc.", "dim.", "<", ">"]
+        valid_dynamics = [d.value for d in DynamicLevel] + cls.possible_dynamics
         if v not in valid_dynamics:
             raise ValueError(f"Invalid dynamic '{v}'. Valid: {valid_dynamics}")
         return v
 
+    def generate_notation(self) -> str:
+        """
+        Generate dynamic notation with optional duration indicators.
+
+        Args:
+            dynamic: Dynamic marking (pp, p, mp, mf, f, ff, cresc., etc.)
+            duration: Optional duration for extended markings
+
+        Returns:
+            String like "f", "cresc.---", "dim.--"
+        """
+        if self.dynamic in self.possible_dynamics:
+            # Extended markings get duration dashes
+            if self.duration:
+                num_dashes = max(1, int(self.duration * 2))
+                return self.dynamic + "-" * num_dashes
+            else:
+                return self.dynamic + "---"  # Default length
+
+        # Standard dynamics are just the marking
+        return self.dynamic
+    
 # ============================================================================
 #  Annotation Events
 # ============================================================================
 
-class PalmMute(BaseEvent):
+class PalmMute(NotationEvent, type="palmMute"):
     """ palm mute with intensity levels."""
-    type: Literal["palmMute"] = "palmMute"
     beat: float
     duration: float = Field(default=1.0, gt=0, le=8.0)
     intensity: Optional[Literal["light", "medium", "heavy"]] = None
+    intensity_map: Dict = {"light": "(L)", "medium": "(M)", "heavy": "(H)"}
+    layer: DisplayLayer = DisplayLayer.ANNOTATIONS
 
-class Chuck(BaseEvent):
+    def generate_notation(self) -> str:
+        """
+        Generate  palm mute notation with intensity indicators.
+
+        Args:
+            duration: Duration in beats
+            intensity: Intensity level ("light", "medium", "heavy")
+
+        Returns:
+            String like "PM--", "PM(L)--", "PM(H)----"
+        """
+        base = "PM"
+
+        # Add intensity indicator
+        if self.intensity:
+            base += self.intensity_map.get(self.intensity, "")
+
+        # Add duration dashes
+        num_dashes = max(1, int(self.duration * 2))
+        return base + "-" * num_dashes
+
+class Chuck(NotationEvent, type="chuck"):
     """ chuck with emphasis levels."""
-    type: Literal["chuck"] = "chuck"
     beat: float
     intensity: Optional[Literal["light", "medium", "heavy"]] = None
+    layer: DisplayLayer = DisplayLayer.ANNOTATIONS
 
+    def generate_notation(self) -> str:
+        return "X" + (self.intensity[0].upper() if self.intensity else "")  # X, XL, XM, XH
 
 # ============================================================================
 # Response Models
@@ -311,11 +455,8 @@ class SongStructure(BaseModel):
 
 class TabRequest(BaseModel):
     """
-    Tab request supporting both legacy measures format and new parts system.
-    
-    Can use either:
-    1. Legacy format: "measures" array (backwards compatible)
-    2. New format: "parts" dict + "structure" array
+    Tab request system.
+
     """
     title: str
     description: str = ""
@@ -329,9 +470,6 @@ class TabRequest(BaseModel):
     attempt: int = Field(default=1, ge=1, le=10)
     showBeatMarkers: bool = Field(default=True, description="Show beat counting (1 & 2 & 3 & 4 &)")
     
-    # Legacy format (backwards compatible)
-    measures: Optional[List[Dict[str, Any]]] = Field(None, description="Legacy measures format")
-    
     # New parts format
     parts: Optional[Dict[str, SongPart]] = Field(None, description="Named song parts/sections")
     structure: Optional[List[str]] = Field(None, description="Order of parts in the song")
@@ -342,20 +480,6 @@ class TabRequest(BaseModel):
     showDynamics: bool = Field(default=True)
     showPartHeaders: bool = Field(default=True, description="Show part names as headers")
     
-    @model_validator(mode='after')
-    def validate_format_consistency(self):
-        """Ensure either legacy measures OR new parts+structure format is used."""
-        has_measures = self.measures is not None and len(self.measures) > 0
-        has_parts = self.parts is not None and len(self.parts) > 0
-        has_structure = self.structure is not None and len(self.structure) > 0
-        
-        if has_measures and (has_parts or has_structure):
-            raise ValueError("Cannot use both legacy 'measures' format and new 'parts'+'structure' format")
-        
-        if not has_measures and not (has_parts and has_structure):
-            raise ValueError("Must provide either 'measures' (legacy) or both 'parts' and 'structure' (new format)")
-        
-        return self
     
     @field_validator('instrument')
     @classmethod
@@ -458,56 +582,6 @@ def process_song_structure(request: TabRequest) -> List[PartInstance]:
     
     return instances
 
-def convert_parts_to_legacy_format(request: TabRequest) -> Dict[str, Any]:
-    """
-    Convert new parts+structure format to legacy measures format for backwards compatibility.
-    
-    This allows the existing tab generation code to work without changes.
-    
-    Args:
-        request:  tab request with parts system
-        
-    Returns:
-        Dictionary in legacy format with flattened measures array
-    """
-    if request.measures is not None:
-        # Already in legacy format
-        return request.model_dump()
-    
-    # Process parts into instances
-    instances = process_song_structure(request)
-    
-    # Flatten all measures with part headers
-    all_measures = []
-    
-    for instance in instances:
-        # Add part header as a special measure (if enabled)
-        if request.showPartHeaders:
-            header_measure = {
-                "events": [],
-                "_part_header": {
-                    "name": instance.display_name,
-                    "description": request.parts[instance.part_name].description,
-                    "tempo": instance.tempo,
-                    "key": instance.key,
-                    "time_signature": instance.time_signature
-                }
-            }
-            all_measures.append(header_measure)
-        
-        # Add all measures from this part instance
-        all_measures.extend(instance.measures)
-    
-    # Create legacy format
-    legacy_data = request.model_dump()
-    legacy_data["measures"] = all_measures
-    
-    # Remove parts-specific fields
-    legacy_data.pop("parts", None)
-    legacy_data.pop("structure", None)
-    legacy_data.pop("showPartHeaders", None)
-    
-    return legacy_data
 
 # ============================================================================
 # Validation Functions for Parts System
@@ -526,9 +600,6 @@ def validate_parts_system(request: TabRequest) -> Dict[str, Any]:
     Returns:
         Error dict if validation fails, {"isError": False} if valid
     """
-    if request.measures is not None:
-        # Legacy format, skip parts validation
-        return {"isError": False}
     
     if not request.parts or not request.structure:
         return {
@@ -580,15 +651,7 @@ def analyze_song_structure(request: TabRequest) -> Dict[str, Any]:
     Returns:
         Dictionary with analysis of the song structure
     """
-    if request.measures is not None:
-        # Legacy format analysis
-        return {
-            "format": "legacy",
-            "total_measures": len(request.measures),
-            "parts_count": 0,
-            "structure_length": 0
-        }
-    
+
     instances = process_song_structure(request)
     
     # Count occurrences of each part
