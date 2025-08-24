@@ -830,13 +830,13 @@ def generate_tab(tab_data: str) -> TabResponse:
     # Ukulele Song
     **Time Signature:** 4/4
 
-      C       G       Am      F
-      1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 & 1 & 2 & 3 & 4 &
-    |-3-------2-------0-------0-------| ← A string
-    |-0-------0-------0-------1-------| ← E string
-    |-0-------2-------0-------0-------| ← C string
-    |-0-------3-------2-------2-------| ← G string
-      D   U   D U D U D   U   D U D U
+       C       G         Am      F
+       1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 & 
+    A|-3-------2-------|-0-------0-------|
+    E|-0-------0-------|-0-------1-------|
+    C|-0-------2-------|-0-------0-------|
+    G|-0-------3-------|-2-------2-------|
+       D   U   D U D U   D   U   D U D U
     Performance Notes for Ukulele
     Use description fields for ukulele-specific techniques:
 
