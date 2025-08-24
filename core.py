@@ -125,7 +125,8 @@ def generate_measure_group(
     content_width = get_content_width(time_signature)
 
     for string_idx in range(tab_data["num_strings"]):
-        line = "|"  # Start with opening separator
+        note = tab_data["tuning"][string_idx]
+        line = note + "|"  # Start with opening separator
         for measure_idx in range(num_measures):
             line += "-" * content_width + "|"  # content + separator
         string_lines.append(line)
@@ -714,6 +715,7 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
     try:
         config = get_instrument_config(instrument_str)
         num_strings = config.strings
+        tuning = config.tuning
         logger.debug(f"Generating tab for {config.name} ({num_strings} strings)")
     except ValueError:
         num_strings = 6  # Default to guitar
@@ -742,7 +744,8 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
                 "title": f"{instance.display_name}",
                 "timeSignature": part_time_sig,
                 "measures": measure_group,
-                "num_strings": num_strings
+                "num_strings": num_strings,
+                "tuning": tuning
             }
 
             # Generate measure group

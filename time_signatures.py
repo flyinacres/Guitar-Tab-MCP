@@ -214,8 +214,8 @@ def calculate_char_position(beat: float, measure_offset: int, time_signature: st
         closest_beat = get_closest_valid_beat(beat, time_signature)
         base_position = config["char_positions"][closest_beat]
     
-    # Add offset for measure position
-    return base_position + (measure_offset * config["measure_width"])
+    # Add offset for measure position. +1 for the string note name
+    return 1 + base_position + (measure_offset * config["measure_width"])
 
 # ============================================================================
 # Beat Marker Generation
@@ -250,7 +250,8 @@ def generate_beat_markers(time_signature: str, num_measures: int) -> str:
     
     # Repeat the pattern for each measure
     full_line = beat_pattern * num_measures
-    return full_line 
+    # Add a space in front to account for the string name
+    return " " + full_line 
 
 # ============================================================================
 # Measure Width Calculations
@@ -269,7 +270,7 @@ def get_content_width(time_signature: str) -> int:
 def calculate_total_width(time_signature: str, num_measures: int) -> int:
     """Calculate total character width for multiple measures."""
     measure_width = get_measure_width(time_signature)
-    return 1 + (num_measures * measure_width)  # +1 for leading space
+    return 1 + (num_measures * measure_width)  # +1 for leading space and string name
 
 # ============================================================================
 # Advanced Time Signature Analysis
