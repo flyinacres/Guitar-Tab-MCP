@@ -1,0 +1,28 @@
+{
+  "invalid_ukulele_string": {
+    "title": "Invalid Ukulele String Test",
+    "shouldFail": true,
+    "expectedError": "Invalid string number: 5",
+    "instrument": "ukulele",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 5,
+                "fret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

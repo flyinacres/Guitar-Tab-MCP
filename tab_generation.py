@@ -95,7 +95,7 @@ def generate_measure_group(
     - Dynamics (when present)
     - Annotations (PM, X, emphasis markings)
     - Beat markers
-    - Tab content (6 string lines)
+    - Tab content 
     - Strum patterns (when present)
 
     Args:

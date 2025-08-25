@@ -243,6 +243,10 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     logger.debug("Starting enhanced conflict validation")
 
+    # Will need to know what instrument to verify against number of strings
+    instrument = get_instrument_config(data.get("instrument", "guitar"))
+    #print(f"events instrument: {event}, strings found: {instrument.strings}")
+
     for part_name, part_def in data["parts"].items():
         logger.debug(f"Validating conflicts in part '{part_name}'")
 
@@ -347,7 +351,7 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
                 events_by_position[position_key] = event
 
                 # Validate technique-specific rules (enhanced)
-                technique_error = validate_technique_rules(event, part_name, measure_idx, beat)
+                technique_error = validate_technique_rules(event, part_name, measure_idx, beat, instrument.strings)
                 if technique_error["isError"]:
                     return technique_error
 
@@ -534,14 +538,14 @@ def validate_measure_strum_patterns(measures: List[Dict[str, Any]], time_signatu
 
     return {"isError": False}
 
-def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx: int, beat: float) -> Dict[str, Any]:
+def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx: int, beat: float, strings: int) -> Dict[str, Any]:
     """
     Validate technique-specific rules that ensure playability and proper notation.
 
     Each guitar technique has physical constraints and notation rules:
     - Hammer-ons must go to higher fret (you can't hammer down)
     - Pull-offs must go to lower fret
-    - String numbers must be 1-6 (1=high e, 6=low E)
+    - String numbers must be valid per instrument
     - Fret numbers must be 0-24 or "x" for muted strings
     - Bend semitones must be 0.5-3.0 (quarter-step to step-and-a-half)
     - Palm mute duration must be positive and reasonable (0.5-8.0 beats)
@@ -563,7 +567,7 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
 
     # Validate string range for all events with string field
     string_num = event.get("string")
-    if string_num is not None and (string_num < 1 or string_num > 6):
+    if string_num is not None and (string_num < 1 or string_num > strings):
         return {
             "isError": True,
             "errorType": "validation_error",
@@ -660,8 +664,6 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
     return {"isError": False}
 
 
-
-# Add this new validation function:
 def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate all events for the specified instrument.

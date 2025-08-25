@@ -1,0 +1,62 @@
+{
+  "banjo_test": {
+    "title": "5-String Banjo Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "banjo",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "U",
+              "",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 4,
+                    "fret": 0
+                  },
+                  {
+                    "string": 3,
+                    "fret": 0
+                  },
+                  {
+                    "string": 2,
+                    "fret": 0
+                  },
+                  {
+                    "string": 1,
+                    "fret": 3
+                  }
+                ]
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 5,
+                "fret": 0,
+                "emphasis": ">"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

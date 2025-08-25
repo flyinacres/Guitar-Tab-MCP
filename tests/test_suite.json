@@ -1169,5 +1169,454 @@
       }
     },
     "structure": ["Main"]
+  },
+  "bass_guitar_test": {
+    "title": "Bass Guitar Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "bass",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": ["D", "", "", "", "D", "", "", ""],
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 3,
+                "fret": 2
+              },
+              {
+                "type": "note",
+                "beat": 4.0,
+                "string": 2,
+                "fret": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "banjo_test": {
+    "title": "5-String Banjo Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "banjo",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 0 },
+                  { "string": 2, "fret": 0 },
+                  { "string": 1, "fret": 3 }
+                ]
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 5,
+                "fret": 0,
+                "emphasis": ">"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "mandolin_test": {
+    "title": "8-String Mandolin Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "mandolin",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  { "string": 8, "fret": 3 },
+                  { "string": 7, "fret": 3 },
+                  { "string": 6, "fret": 2 },
+                  { "string": 5, "fret": 2 }
+                ]
+              },
+              {
+                "type": "hammerOn",
+                "string": 4,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 2
+              },
+              {
+                "type": "hammerOn",
+                "string": 3,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 2
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "seven_string_guitar_test": {
+    "title": "7-String Guitar Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "seven string",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "B7",
+                "frets": [
+                  { "string": 7, "fret": 0 },
+                  { "string": 6, "fret": 2 },
+                  { "string": 5, "fret": 1 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 2, "fret": 2 }
+                ]
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 7,
+                "semitones": 1.0,
+                "emphasis": "f"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "bass_techniques_test": {
+    "title": "Bass Guitar Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "bass",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 3,
+                "emphasis": "f"
+              },
+              {
+                "type": "slide",
+                "string": 3,
+                "startBeat": 1.5,
+                "fromFret": 2,
+                "toFret": 5,
+                "direction": "up"
+              },
+              {
+                "type": "hammerOn",
+                "string": 2,
+                "startBeat": 2.5,
+                "fromFret": 0,
+                "toFret": 2
+              },
+              {
+                "type": "pullOff",
+                "string": 2,
+                "startBeat": 3.0,
+                "fromFret": 2,
+                "toFret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "ukulele_advanced_test": {
+    "title": "Ukulele Advanced Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "ukulele",
+    "timeSignature": "3/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": ["D", "", "D", "", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Am",
+                "emphasis": "mf",
+                "frets": [
+                  { "string": 4, "fret": 2 },
+                  { "string": 3, "fret": 0 },
+                  { "string": 2, "fret": 0 },
+                  { "string": 1, "fret": 0 }
+                ]
+              },
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 3,
+                "graceFret": 1,
+                "graceType": "acciaccatura"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 3
+              },
+              {
+                "type": "chuck",
+                "beat": 3.0,
+                "intensity": "light"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "banjo_fingerpicking_test": {
+    "title": "Banjo Fingerpicking Style",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "banjo",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 0,
+                "emphasis": "p"
+              },
+              {
+                "type": "note",
+                "beat": 1.5,
+                "string": 3,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 2.0,
+                "string": 5,
+                "fret": 0,
+                "emphasis": ">"
+              },
+              {
+                "type": "note",
+                "beat": 2.5,
+                "string": 2,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 1,
+                "fret": 3
+              },
+              {
+                "type": "pullOff",
+                "string": 1,
+                "startBeat": 3.5,
+                "fromFret": 3,
+                "toFret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "mandolin_tremolo_test": {
+    "title": "Mandolin with Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "mandolin",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 8,
+                "fret": 5,
+                "emphasis": "f"
+              },
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 7,
+                "fret": 5,
+                "emphasis": "f"
+              },
+              {
+                "type": "slide",
+                "string": 6,
+                "startBeat": 2.0,
+                "fromFret": 2,
+                "toFret": 4,
+                "direction": "up"
+              },
+              {
+                "type": "slide",
+                "string": 5,
+                "startBeat": 2.0,
+                "fromFret": 2,
+                "toFret": 4,
+                "direction": "up"
+              },
+              {
+                "type": "bend",
+                "string": 4,
+                "beat": 3.0,
+                "fret": 3,
+                "semitones": 0.5,
+                "vibrato": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "seven_string_metal_test": {
+    "title": "7-String Metal Style",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "seven string",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": ["D", "", "", "D", "", "", "D", ""],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "B5",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 7, "fret": 0 },
+                  { "string": 6, "fret": 2 }
+                ]
+              },
+              {
+                "type": "palmMute",
+                "beat": 1.0,
+                "duration": 4.0,
+                "intensity": "heavy"
+              },
+              {
+                "type": "chord",
+                "beat": 2.5,
+                "chordName": "C#5",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 7, "fret": 2 },
+                  { "string": 6, "fret": 4 }
+                ]
+              },
+              {
+                "type": "chuck",
+                "beat": 3.0,
+                "intensity": "heavy"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "invalid_ukulele_string": {
+    "title": "Invalid Ukulele String Test",
+    "shouldFail": true,
+    "expectedError": "Invalid string number: 5",
+    "instrument": "ukulele",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 5,
+                "fret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
   }
 }

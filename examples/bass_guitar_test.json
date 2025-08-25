@@ -1,0 +1,50 @@
+{
+  "bass_guitar_test": {
+    "title": "Bass Guitar Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "bass",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "",
+              "",
+              "D",
+              "",
+              "",
+              ""
+            ],
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 3,
+                "fret": 2
+              },
+              {
+                "type": "note",
+                "beat": 4.0,
+                "string": 2,
+                "fret": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

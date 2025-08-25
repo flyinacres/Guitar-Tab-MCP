@@ -1,0 +1,61 @@
+{
+  "banjo_fingerpicking_test": {
+    "title": "Banjo Fingerpicking Style",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "banjo",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 0,
+                "emphasis": "p"
+              },
+              {
+                "type": "note",
+                "beat": 1.5,
+                "string": 3,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 2.0,
+                "string": 5,
+                "fret": 0,
+                "emphasis": ">"
+              },
+              {
+                "type": "note",
+                "beat": 2.5,
+                "string": 2,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "beat": 3.0,
+                "string": 1,
+                "fret": 3
+              },
+              {
+                "type": "pullOff",
+                "string": 1,
+                "startBeat": 3.5,
+                "fromFret": 3,
+                "toFret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

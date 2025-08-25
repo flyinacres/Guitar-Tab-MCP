@@ -1,0 +1,67 @@
+{
+  "seven_string_guitar_test": {
+    "title": "7-String Guitar Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "seven string",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "B7",
+                "frets": [
+                  {
+                    "string": 7,
+                    "fret": 0
+                  },
+                  {
+                    "string": 6,
+                    "fret": 2
+                  },
+                  {
+                    "string": 5,
+                    "fret": 1
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  },
+                  {
+                    "string": 2,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 7,
+                "semitones": 1.0,
+                "emphasis": "f"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

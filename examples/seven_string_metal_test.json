@@ -1,0 +1,75 @@
+{
+  "seven_string_metal_test": {
+    "title": "7-String Metal Style",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "seven string",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "",
+              "D",
+              "",
+              "",
+              "D",
+              ""
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "B5",
+                "emphasis": "ff",
+                "frets": [
+                  {
+                    "string": 7,
+                    "fret": 0
+                  },
+                  {
+                    "string": 6,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "palmMute",
+                "beat": 1.0,
+                "duration": 4.0,
+                "intensity": "heavy"
+              },
+              {
+                "type": "chord",
+                "beat": 2.5,
+                "chordName": "C#5",
+                "emphasis": "ff",
+                "frets": [
+                  {
+                    "string": 7,
+                    "fret": 2
+                  },
+                  {
+                    "string": 6,
+                    "fret": 4
+                  }
+                ]
+              },
+              {
+                "type": "chuck",
+                "beat": 3.0,
+                "intensity": "heavy"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

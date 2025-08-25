@@ -1,0 +1,59 @@
+{
+  "mandolin_test": {
+    "title": "8-String Mandolin Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "mandolin",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 8,
+                    "fret": 3
+                  },
+                  {
+                    "string": 7,
+                    "fret": 3
+                  },
+                  {
+                    "string": 6,
+                    "fret": 2
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "hammerOn",
+                "string": 4,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 2
+              },
+              {
+                "type": "hammerOn",
+                "string": 3,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 2
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

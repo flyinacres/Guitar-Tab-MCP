@@ -117,7 +117,7 @@ class TabTestFramework:
         
         if show:
             print(output)
-            
+
         # Some tests are designed to fail
         if test_data["shouldFail"]:
             # it was supposed to fail, but it did not!

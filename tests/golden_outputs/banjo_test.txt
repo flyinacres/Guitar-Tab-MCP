@@ -1,0 +1,21 @@
+# 5-String Banjo Test
+**Time Signature:** 4/4
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+   G
+           >
+   1 & 2 & 3 & 4 &  
+D|-3---------------|
+G|-0---------------|
+B|-0---------------|
+D|-0---------------|
+g|---------0-------|
+   D   D U   U D U
+

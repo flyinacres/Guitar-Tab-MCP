@@ -1,0 +1,60 @@
+{
+  "mandolin_tremolo_test": {
+    "title": "Mandolin with Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "mandolin",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 8,
+                "fret": 5,
+                "emphasis": "f"
+              },
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 7,
+                "fret": 5,
+                "emphasis": "f"
+              },
+              {
+                "type": "slide",
+                "string": 6,
+                "startBeat": 2.0,
+                "fromFret": 2,
+                "toFret": 4,
+                "direction": "up"
+              },
+              {
+                "type": "slide",
+                "string": 5,
+                "startBeat": 2.0,
+                "fromFret": 2,
+                "toFret": 4,
+                "direction": "up"
+              },
+              {
+                "type": "bend",
+                "string": 4,
+                "beat": 3.0,
+                "fret": 3,
+                "semitones": 0.5,
+                "vibrato": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

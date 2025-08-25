@@ -1,0 +1,51 @@
+{
+  "bass_techniques_test": {
+    "title": "Bass Guitar Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "bass",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "beat": 1.0,
+                "string": 4,
+                "fret": 3,
+                "emphasis": "f"
+              },
+              {
+                "type": "slide",
+                "string": 3,
+                "startBeat": 1.5,
+                "fromFret": 2,
+                "toFret": 5,
+                "direction": "up"
+              },
+              {
+                "type": "hammerOn",
+                "string": 2,
+                "startBeat": 2.5,
+                "fromFret": 0,
+                "toFret": 2
+              },
+              {
+                "type": "pullOff",
+                "string": 2,
+                "startBeat": 3.0,
+                "fromFret": 2,
+                "toFret": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}
