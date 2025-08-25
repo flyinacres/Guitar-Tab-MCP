@@ -13,12 +13,11 @@ import sys
 import logging
 from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator
-from tab_constants import DisplayLayer
 from time_signatures import ( get_time_signature_config, calculate_char_position )
 
 # Import our constants
 from tab_constants import (
-    DynamicLevel,
+    DynamicLevel, DisplayLayer,
     VALID_EMPHASIS_VALUES, MAX_FRET, MAX_STRING, MIN_STRING,
     MAX_SEMITONES, MIN_SEMITONES
 )

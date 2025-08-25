@@ -21,12 +21,12 @@ from typing import Dict, List, Any
 
 from tab_constants import (
     VALID_EMPHASIS_VALUES,
-    get_strum_positions_for_time_signature,
     is_valid_emphasis,
     get_instrument_config
 )
 
 from time_signatures import (
+    get_strum_positions_for_time_signature,
     get_time_signature_config,
     get_valid_beats,
     is_beat_valid,

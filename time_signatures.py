@@ -43,7 +43,25 @@ TIME_SIGNATURE_CONFIGS = {
             3.0: 10, 3.5: 12, 4.0: 14, 4.5: 16
         },
         "measure_width": 18,  # Total characters including separator
-        "content_width": 17   # Dashes between separators
+        "content_width": 17,  # Dashes between separators
+        "strum_positions": 8
+    },
+    
+    "4/4 - 16ths": {
+        "name": "Common Time - 16ths",
+        "beats_per_measure": 4,
+        "beat_subdivisions": 4,  # Changed from 2 to 4
+        "valid_beats": [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75],
+        "beat_markers": " 1 e & a 2 e & a 3 e & a 4 e & a  ",
+        "char_positions": {
+            1.0: 2, 1.25: 4, 1.5: 6, 1.75: 8,
+            2.0: 10, 2.25: 12, 2.5: 14, 2.75: 16,
+            3.0: 18, 3.25: 20, 3.5: 22, 3.75: 24,
+            4.0: 26, 4.25: 28, 4.5: 30, 4.75: 32
+        },
+        "measure_width": 34,  # Doubled width
+        "content_width": 33,  # Doubled width
+        "strum_positions": 16
     },
     
     "3/4": {
@@ -56,7 +74,8 @@ TIME_SIGNATURE_CONFIGS = {
             1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8, 3.0: 10, 3.5: 12
         },
         "measure_width": 14,
-        "content_width": 13
+        "content_width": 13,
+        "strum_positions": 6
     },
     
     "6/8": {
@@ -69,7 +88,8 @@ TIME_SIGNATURE_CONFIGS = {
             1.0: 2, 1.33: 4, 1.67: 6, 2.0: 8, 2.33: 10, 2.67: 12
         },
         "measure_width": 14,
-        "content_width": 13 
+        "content_width": 13,
+        "strum_positions": 6 
     },
     
     "2/4": {
@@ -82,8 +102,18 @@ TIME_SIGNATURE_CONFIGS = {
             1.0: 2, 1.5: 4, 2.0: 6, 2.5: 8
         },
         "measure_width": 10,
-        "content_width": 9
+        "content_width": 9,
+        "strum_positions": 4
     }
+}
+
+
+STRUM_POSITIONS_PER_MEASURE = {
+    "4/4": 8,  # 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5
+    "4/4 - 16ths": 16, # 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75
+    "3/4": 6,  # 1.0, 1.5, 2.0, 2.5, 3.0, 3.5
+    "2/4": 4,  # 1.0, 1.5, 2.0, 2.5
+    "6/8": 6,  # 1.0, 1.33, 1.67, 2.0, 2.33, 2.67 (compound time)
 }
 
 # ============================================================================
@@ -379,3 +409,14 @@ def get_module_info() -> Dict[str, Any]:
             "Time signature analysis"
         ]
     }
+
+
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+def get_strum_positions_for_time_signature(time_signature: str) -> int:
+    """Get number of strum positions per measure for a time signature."""
+    return STRUM_POSITIONS_PER_MEASURE.get(time_signature, 8)
+
+

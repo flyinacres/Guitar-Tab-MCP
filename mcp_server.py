@@ -35,6 +35,7 @@ from tab_generation import (
     check_attempt_limit as check_attempt_limit
 )
 
+from time_signatures import STRUM_POSITIONS_PER_MEASURE
 from validation import (
      validate_tab_data
 )
@@ -42,8 +43,7 @@ from validation import (
 from tab_models import TabResponse, TabRequest, analyze_song_structure, create_schema
 
 from tab_constants import (
-    StrumDirection, DynamicLevel,
-    STRUM_POSITIONS_PER_MEASURE
+    StrumDirection, DynamicLevel
 )
 
 # Configure logging to stderr (stdout reserved for MCP JSON-RPC protocol)
