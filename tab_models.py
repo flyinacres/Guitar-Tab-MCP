@@ -11,6 +11,7 @@ Updated Pydantic models compatible with V2 syntax using:
 
 import sys
 import logging
+import json
 from typing import Dict, List, Any, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
 from tab_constants import Instrument, get_instrument_config
@@ -148,6 +149,16 @@ class TabRequest(BaseModel):
     showStrumPattern: bool = Field(default=True)
     showDynamics: bool = Field(default=True)
     showPartHeaders: bool = Field(default=True, description="Show part names as headers")
+
+    # info that can be used to generate a valid schema for the JSON format used
+    model_config = {
+        "title": "Stringed Instrument Tab Generator JSON Schema",
+        "description": "Schema for generating stringed instrument tablature",
+        "json_schema_extra": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://github.com/yourusername/guitar-tab-generator/schema.json",
+        }
+    }
     
     @field_validator('instrument')
     @classmethod
@@ -402,3 +413,17 @@ if __name__ == "__main__":
         
     except Exception as e:
         print(f"❌ Error: {e}")
+
+
+
+def save_schema(filename: str = "tab-schema.json"):
+    """Save JSON Schema to file."""
+
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(TabRequest.model_json_schema(), f, indent=2)
+    
+    print(f"✅ Schema saved to {filename}")
+
+# For CLI usage
+if __name__ == "__main__":
+    save_schema()

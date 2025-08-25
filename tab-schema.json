@@ -1,0 +1,263 @@
+{
+  "$defs": {
+    "SongPart": {
+      "description": "A named section of a song containing measures.\n\nExamples: Verse, Chorus, Bridge, Intro, Outro, Solo, etc.",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional display name override",
+          "title": "Name"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Description of this part",
+          "title": "Description"
+        },
+        "measures": {
+          "description": "Measures with optional strumPattern field",
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Measures",
+          "type": "array"
+        },
+        "tempo_change": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tempo change for this part",
+          "title": "Tempo Change"
+        },
+        "key_change": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Key change for this part",
+          "title": "Key Change"
+        },
+        "time_signature_change": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Time signature change for this part",
+          "title": "Time Signature Change"
+        }
+      },
+      "required": [
+        "measures"
+      ],
+      "title": "SongPart",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/yourusername/guitar-tab-generator/schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tab request system.",
+  "properties": {
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "artist": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Artist"
+    },
+    "instrument": {
+      "default": "guitar",
+      "title": "Instrument",
+      "type": "string"
+    },
+    "timeSignature": {
+      "default": "4/4",
+      "enum": [
+        "4/4",
+        "3/4",
+        "6/8",
+        "2/4"
+      ],
+      "title": "Timesignature",
+      "type": "string"
+    },
+    "tempo": {
+      "anyOf": [
+        {
+          "maximum": 300,
+          "minimum": 40,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tempo"
+    },
+    "key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Key"
+    },
+    "capo": {
+      "anyOf": [
+        {
+          "maximum": 12,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Capo"
+    },
+    "tuning": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tuning"
+    },
+    "attempt": {
+      "default": 1,
+      "maximum": 10,
+      "minimum": 1,
+      "title": "Attempt",
+      "type": "integer"
+    },
+    "showBeatMarkers": {
+      "default": true,
+      "description": "Show beat counting (1 & 2 & 3 & 4 &)",
+      "title": "Showbeatmarkers",
+      "type": "boolean"
+    },
+    "parts": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/SongPart"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Named song parts/sections",
+      "title": "Parts"
+    },
+    "structure": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Order of parts in the song",
+      "title": "Structure"
+    },
+    "globalDynamic": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Globaldynamic"
+    },
+    "showStrumPattern": {
+      "default": true,
+      "title": "Showstrumpattern",
+      "type": "boolean"
+    },
+    "showDynamics": {
+      "default": true,
+      "title": "Showdynamics",
+      "type": "boolean"
+    },
+    "showPartHeaders": {
+      "default": true,
+      "description": "Show part names as headers",
+      "title": "Showpartheaders",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "Stringed Instrument Tab Generator JSON Schema",
+  "type": "object"
+}
