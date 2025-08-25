@@ -26,7 +26,10 @@ from tab_constants import (
     get_instrument_config
 )
 
-from notation_events import NotationEvent
+from notation_events import (
+    NotationEvent, GraceNote, StrumPattern, 
+    Chord, Dynamic, PalmMute, Chuck,
+    HammerOn, Bend, PullOff, Slide )
 
 from time_signatures import (
     get_strum_positions_for_time_signature,
@@ -168,9 +171,7 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
             logger.debug("Validating timing for part '%s' measure %s", part_name, measure_idx)
 
             for event_idx, event in enumerate(measure.get("events", []), 1):
-                event_type = event.get("type")
-                event_class = NotationEvent.from_dict(event)
- 
+                event_class = NotationEvent.from_dict(event) 
                 
                 beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
 
@@ -186,56 +187,36 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
                         "suggestion": "Add 'beat' or 'startBeat' field to event"
                     }
 
-                # Enhanced beat validation for different event types
-                if event_type == "graceNote":
-                    # Grace notes have special timing requirements
-                    grace_result = validate_grace_note_timing(beat, time_sig,
-                                                              part_name, measure_idx)
-                    if grace_result["isError"]:
-                        return grace_result
-                elif event_type == "strumPattern":
-                    # Strum patterns have their own validation (handled separately)
-                    logger.debug("Strum pattern found at beat %s - will validate separately", beat)
-                    continue
-                else:
-                    # Standard beat validation
-                    if not is_beat_valid(beat, time_sig):
-                        logger.warning("Invalid beat %s for %s in part '%s' measure %s",
-                                       beat, time_sig, part_name, measure_idx)
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part_name,
-                            "measure": measure_idx,
-                            "beat": beat,
-                            "message": f"Beat {beat} invalid for {time_sig} time signature in part '{part_name}'",
-                            "suggestion": f"Use valid beat values for {time_sig}: {', '.join(map(str, get_valid_beats(time_sig)))}"
-                        }
+                match event_class:
+                    # Enhanced beat validation for different event types
+                    case GraceNote():
+                        # Grace notes have special timing requirements
+                        grace_result = GraceNote.validate_grace_note_timing(beat, time_sig,
+                                                                part_name, measure_idx)
+                        if grace_result["isError"]:
+                            return grace_result
+                    case StrumPattern():
+                        # Strum patterns have their own validation (handled separately)
+                        logger.debug("Strum pattern found at beat %s - will validate separately", beat)
+                        continue
+                    case _:
+                        # Standard beat validation
+                        if not is_beat_valid(beat, time_sig):
+                            logger.warning("Invalid beat %s for %s in part '%s' measure %s",
+                                        beat, time_sig, part_name, measure_idx)
+                            return {
+                                "isError": True,
+                                "errorType": "validation_error",
+                                "part": part_name,
+                                "measure": measure_idx,
+                                "beat": beat,
+                                "message": f"Beat {beat} invalid for {time_sig} time signature in part '{part_name}'",
+                                "suggestion": f"Use valid beat values for {time_sig}: {', '.join(map(str, get_valid_beats(time_sig)))}"
+                            }
 
     logger.debug("Enhanced timing validation passed")
     return {"isError": False}
 
-
-def validate_grace_note_timing(beat: float, time_sig: str, part_name: str, measure: int) -> Dict[str, Any]:
-    """
-    Validate grace note timing for parts-based schema.
-    """
-    config = get_time_signature_config(time_sig)
-    max_beat = max(config["valid_beats"])
-
-    # Grace notes should not be at the very end of a measure
-    if beat >= max_beat:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "part": part_name,
-            "measure": measure,
-            "beat": beat,
-            "message": f"Grace note in part '{part_name}' has invalid timing at beat {beat}",
-            "suggestion": f"Grace notes should be placed before beat {max_beat}"
-        }
-
-    return {"isError": False}
 
 def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -264,78 +245,69 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
             logger.debug(f"Validating conflicts in part '{part_name}' measure {measure_idx}")
 
             for event in measure.get("events", []):
-                event_type = event.get("type")
-
-                # Validate event has required type field
-                if not event_type:
-                    return {
-                        "isError": True,
-                        "errorType": "validation_error",
-                        "part": part_name,
-                        "measure": measure_idx,
-                        "message": f"Event in part '{part_name}' missing 'type' field",
-                        "suggestion": "Add 'type' field with value like 'note', 'hammerOn', 'chord', etc."
-                    }
+                event_class = NotationEvent.from_dict(event) 
 
                 # Collect different event types for specialized validation
-                if event_type == "strumPattern":
-                    strum_patterns.append(event)
-                    continue
-                
-                if event_type == "graceNote":
-                    grace_notes.append(event)
-                    continue
-                elif event_type in ["dynamic", "palmMute", "chuck"]:
-                    # Annotation events don't conflict with musical events
-                    continue
+                match event_class:
+                    case StrumPattern():
+                        strum_patterns.append(event)
+                        continue
+                    
+                    case GraceNote():
+                        grace_notes.append(event)
+                        continue
+                    
+                    case Dynamic() | PalmMute() | Chuck():
+                        # Annotation events don't conflict with musical events
+                        continue
 
-                # Handle chord events specially - they can have multiple strings at same beat
-                if event_type == "chord":
-                    beat = event.get("beat")
-                    if not beat:
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part_name,
-                            "measure": measure_idx,
-                            "message": f"Chord event in part '{part_name}' missing 'beat' field",
-                            "suggestion": "Add 'beat' field to chord event"
-                        }
-
-                    # Validate chord has frets array
-                    frets = event.get("frets", [])
-                    if not frets:
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part_name,
-                            "measure": measure_idx,
-                            "beat": beat,
-                            "message": f"Chord event in part '{part_name}' missing 'frets' array",
-                            "suggestion": "Add 'frets' array with string/fret objects"
-                        }
-
-                    # Check for duplicate strings within the chord
-                    chord_strings = set()
-                    for fret_info in frets:
-                        string_num = fret_info.get("string")
-                        if string_num in chord_strings:
+                    # Handle chord events specially - they can have multiple strings at same beat
+                    case Chord():
+                        beat = getattr(event_class, 'beat', None) 
+                        if not beat:
                             return {
                                 "isError": True,
-                                "errorType": "conflict_error",
+                                "errorType": "validation_error",
+                                "part": part_name,
+                                "measure": measure_idx,
+                                "message": f"Chord event in part '{part_name}' missing 'beat' field",
+                                "suggestion": "Add 'beat' field to chord event"
+                            }
+
+                        # Validate chord has frets array
+                        frets = getattr(event_class, 'frets', None) 
+                        if not frets:
+                            return {
+                                "isError": True,
+                                "errorType": "validation_error",
                                 "part": part_name,
                                 "measure": measure_idx,
                                 "beat": beat,
-                                "message": f"Chord in part '{part_name}' has duplicate entries for string {string_num}",
-                                "suggestion": "Each string can only appear once per chord"
+                                "message": f"Chord event in part '{part_name}' missing 'frets' array",
+                                "suggestion": "Add 'frets' array with string/fret objects"
                             }
-                        chord_strings.add(string_num)
 
-                    continue  # Skip position conflict checking for chords
+                        # Check for duplicate strings within the chord
+                        chord_strings = set()
+                        for fret_info in frets:
+                            string_num = fret_info.get("string")
+                            if string_num in chord_strings:
+                                return {
+                                    "isError": True,
+                                    "errorType": "conflict_error",
+                                    "part": part_name,
+                                    "measure": measure_idx,
+                                    "beat": beat,
+                                    "message": f"Chord in part '{part_name}' has duplicate entries for string {string_num}",
+                                    "suggestion": "Each string can only appear once per chord"
+                                }
+                            chord_strings.add(string_num)
+
+                        continue  # Skip position conflict checking for chords
 
                 # For non-chord events, check string/beat conflicts
-                string_num = event.get("string")
-                beat = event.get("beat") or event.get("startBeat")
+                string_num = event_class.string
+                beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
 
                 if not string_num or not beat:
                     continue  # These will be caught by other validation
@@ -362,119 +334,13 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
                     return technique_error
 
             # Validate grace note conflicts
-            grace_conflict = validate_grace_note_conflicts(grace_notes, events_by_position, part_name, measure_idx)
+            grace_conflict = GraceNote.validate_grace_note_conflicts(grace_notes, events_by_position, part_name, measure_idx)
             if grace_conflict["isError"]:
                 return grace_conflict
 
     logger.debug("Enhanced conflict validation passed")
     return {"isError": False}
 
-
-def validate_grace_note_conflicts(grace_notes: List[Dict], events_by_position: Dict, part_name: str, measure: int) -> Dict[str, Any]:
-    """
-    Check for conflicts between grace notes and main notes in parts-based schema.
-    """
-    for grace_note in grace_notes:
-        string_num = grace_note.get("string")
-        beat = grace_note.get("beat")
-
-        # Check if there's a main note at the same position
-        position_key = f"{string_num}_{beat}"
-        if position_key not in events_by_position:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "part": part_name,
-                "measure": measure,
-                "beat": beat,
-                "message": f"Grace note in part '{part_name}' on string {string_num} has no target note at beat {beat}",
-                "suggestion": "Grace notes must lead into a main note at the same beat and string"
-            }
-
-    return {"isError": False}
-
-def validate_strum_patterns(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Validate strum pattern events for proper time signature compatibility in parts-based schema.
-
-    Checks:
-    - Pattern length matches time signature requirements
-    - Pattern spans complete measures only
-    - No overlapping strum patterns
-    - Valid strum direction values
-    """
-    time_sig = data.get("timeSignature", "4/4")
-    expected_positions = get_strum_positions_for_time_signature(time_sig)
-
-    logger.debug(f"Validating strum patterns for {time_sig} (expecting {expected_positions} positions per measure)")
-
-    for part_name, part_def in data["parts"].items():
-        active_patterns = []  # Track overlapping patterns within this part
-
-        logger.debug("Validating strum patterns in part '%s'", part_name)
-
-        for measure_idx, measure in enumerate(part_def["measures"], 1):
-            for event in measure.get("events", []):
-                if event.get("type") != "strumPattern":
-                    continue
-
-                logger.debug(f"Found strum pattern in part '{part_name}' measure {measure_idx}")
-
-                pattern = event.get("pattern", [])
-                measures_spanned = event.get("measures", 1)
-                start_beat = event.get("startBeat", 1.0)
-
-                # Validate pattern length
-                expected_length = expected_positions * measures_spanned
-                if len(pattern) != expected_length:
-                    logger.error(f"Strum pattern length mismatch in part '{part_name}': got {len(pattern)}, expected {expected_length}")
-                    return {
-                        "isError": True,
-                        "errorType": "validation_error",
-                        "part": part_name,
-                        "measure": measure_idx,
-                        "message": f"Strum pattern in part '{part_name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
-                        "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
-                    }
-
-                # Validate pattern values
-                for i, direction in enumerate(pattern):
-                    if direction not in ["D", "U", ""]:
-                        logger.error(f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'")
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part_name,
-                            "measure": measure_idx,
-                            "message": f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'",
-                            "suggestion": "Use 'D' for down, 'U' for up, or '' for no strum"
-                        }
-
-                # Check for pattern overlaps within this part
-                pattern_info = {
-                    "start_measure": measure_idx,
-                    "end_measure": measure_idx + measures_spanned - 1,
-                    "start_beat": start_beat
-                }
-
-                for existing_pattern in active_patterns:
-                    if (pattern_info["start_measure"] <= existing_pattern["end_measure"] and
-                        pattern_info["end_measure"] >= existing_pattern["start_measure"]):
-                        logger.error(f"Overlapping strum patterns detected in part '{part_name}'")
-                        return {
-                            "isError": True,
-                            "errorType": "conflict_error",
-                            "part": part_name,
-                            "measure": measure_idx,
-                            "message": f"Overlapping strum patterns detected in part '{part_name}'",
-                            "suggestion": "Only one strum pattern can be active at a time within a part"
-                        }
-
-                active_patterns.append(pattern_info)
-                logger.debug(f"Strum pattern validated in part '{part_name}': {measures_spanned} measures, {len(pattern)} positions")
-
-    logger.debug("Strum pattern validation passed")
-    return {"isError": False}
 
 def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -492,9 +358,10 @@ def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
 
         for measure_idx, measure in enumerate(part_def["measures"], 1):
             for event in measure.get("events", []):
-                emphasis = event.get("emphasis")
+                event_class = NotationEvent.from_dict(event)
+                emphasis = event_class.emphasis
 
-                if emphasis is not None:
+                if event_class.emphasis is not None:
                     logger.debug(f"Found emphasis '{emphasis}' in part '{part_name}' measure {measure_idx}")
 
                     if not is_valid_emphasis(emphasis):
@@ -569,10 +436,10 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
     - palmMute: Requires beat and duration, no string/fret
     - chuck: Requires only beat, no string/fret (affects all strings)
     """
-    event_type = event.get("type")
+    event_class = NotationEvent.from_dict(event)
 
     # Validate string range for all events with string field
-    string_num = event.get("string")
+    string_num = event_class.string
     if string_num is not None and (string_num < 1 or string_num > strings):
         return {
             "isError": True,
@@ -586,7 +453,7 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
 
     # Validate fret ranges (now supports "x" for muted strings)
     for fret_field in ["fret", "fromFret", "toFret"]:
-        fret = event.get(fret_field)
+        fret = getattr(event_class, fret_field, None)
         if fret is not None:
             # Allow "x" or "X" for muted strings
             if isinstance(fret, str) and fret.lower() == "x":
@@ -613,57 +480,57 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
                 }
 
     # Technique-specific validations
-    if event_type == "hammerOn":
-        from_fret = event.get("fromFret")
-        to_fret = event.get("toFret")
-        if from_fret is not None and to_fret is not None and from_fret >= to_fret:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "part": part_name,
-                "measure": measure_idx,
-                "beat": beat,
-                "message": f"Hammer-on fromFret ({from_fret}) must be lower than toFret ({to_fret})",
-                "suggestion": "Hammer-ons go to higher frets - check fromFret and toFret values"
-            }
-
-    elif event_type == "pullOff":
-        from_fret = event.get("fromFret")
-        to_fret = event.get("toFret")
-        if from_fret is not None and to_fret is not None and from_fret <= to_fret:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "part": part_name,
-                "measure": measure_idx,
-                "beat": beat,
-                "message": f"Pull-off fromFret ({from_fret}) must be higher than toFret ({to_fret})",
-                "suggestion": "Pull-offs go to lower frets - check fromFret and toFret values"
-            }
-    # Add bend-specific validation
-    elif event_type == "bend":
-        semitones = event.get("semitones")
-        if semitones is not None:
-            if not isinstance(semitones, (int, float)) or semitones <= 0 or semitones > 3.0:
+    match event_class:
+        case HammerOn():
+            from_fret = event_class.fromFret
+            to_fret = event_class.toFret
+            if from_fret is not None and to_fret is not None and from_fret >= to_fret:
                 return {
                     "isError": True,
                     "errorType": "validation_error",
                     "part": part_name,
                     "measure": measure_idx,
                     "beat": beat,
-                    "message": f"Invalid semitones value: {semitones}",
-                    "suggestion": "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)"
+                    "message": f"Hammer-on fromFret ({from_fret}) must be lower than toFret ({to_fret})",
+                    "suggestion": "Hammer-ons go to higher frets - check fromFret and toFret values"
                 }
 
-    # Additional validation for emphasis on techniques
-    emphasis = event.get("emphasis")
-    event_type = event.get("type")
+        case PullOff():
+            from_fret = event_class.fromFret
+            to_fret = event_class.toFret
+            if from_fret is not None and to_fret is not None and from_fret <= to_fret:
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "part": part_name,
+                    "measure": measure_idx,
+                    "beat": beat,
+                    "message": f"Pull-off fromFret ({from_fret}) must be higher than toFret ({to_fret})",
+                    "suggestion": "Pull-offs go to lower frets - check fromFret and toFret values"
+                }
+        # Add bend-specific validation
+        case Bend():
+            semitones = event_class.semitones
+            if semitones is not None:
+                if not isinstance(semitones, (int, float)) or semitones <= 0 or semitones > 3.0:
+                    return {
+                        "isError": True,
+                        "errorType": "validation_error",
+                        "part": part_name,
+                        "measure": measure_idx,
+                        "beat": beat,
+                        "message": f"Invalid semitones value: {semitones}",
+                        "suggestion": "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)"
+                    }
 
-    if emphasis and event_type in ["bend", "slide", "hammerOn", "pullOff"]:
-        logger.debug(f"Validating emphasis '{emphasis}' on {event_type}")
+    # Additional validation for emphasis on techniques
+    emphasis = event_class.emphasis
+
+    if emphasis and isinstance(event_class, (Bend, Slide, HammerOn, PullOff)):
+        logger.debug(f"Validating emphasis '{emphasis}' on {event_class._type}")
 
         # Some emphasis markings don't make sense with certain techniques
-        if emphasis in ["pp", "p"] and event_type == "bend":
+        if emphasis in ["pp", "p"] and isinstance(event_class, (Bend)):
             logger.warning("Soft dynamics on bends may not be effective")
             # This is a warning, not an error
 
@@ -693,8 +560,9 @@ def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
 
     for measure_idx, measure in enumerate(measures, 1):
         for _, event in enumerate(measure.get("events", []), 1):
+            event_class = NotationEvent.from_dict(event) 
             # Validate string numbers
-            string_num = event.get("string")
+            string_num = event_class.string
             if string_num is not None:
                 if not config.validate_string(string_num):
                     return {
@@ -706,8 +574,8 @@ def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
                     }
 
             # Validate chord frets
-            if event.get("type") == "chord":
-                for fret_info in event.get("frets", []):
+            if event_class._type == Chord():
+                for fret_info in event_class.frets:
                     chord_string = fret_info.get("string")
                     if chord_string and not config.validate_string(chord_string):
                         return {
@@ -742,7 +610,7 @@ def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
         return conflict_result
 
     # Stage 4: Strum pattern validation
-    strum_result = validate_strum_patterns(data)
+    strum_result = StrumPattern.validate_strum_patterns(data)
     if strum_result["isError"]:
         return strum_result
 

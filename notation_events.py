@@ -13,7 +13,7 @@ import sys
 import logging
 from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator, ValidationError
-from time_signatures import ( get_time_signature_config, calculate_char_position )
+from time_signatures import ( get_time_signature_config, get_strum_positions_for_time_signature, calculate_char_position )
 
 # Import our constants
 from tab_constants import (
@@ -392,7 +392,89 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                         logger.debug(f"Placed strum '{direction}' at position {char_position} for beat {beat}")
                     else:
                         logger.warning(f"Character position {char_position} exceeds total width {total_width}")
+    @classmethod
+    def validate_strum_patterns(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate strum pattern events for proper time signature compatibility in parts-based schema.
 
+        Checks:
+        - Pattern length matches time signature requirements
+        - Pattern spans complete measures only
+        - No overlapping strum patterns
+        - Valid strum direction values
+        """
+        time_sig = data.get("timeSignature", "4/4")
+        expected_positions = get_strum_positions_for_time_signature(time_sig)
+
+        logger.debug(f"Validating strum patterns for {time_sig} (expecting {expected_positions} positions per measure)")
+
+        for part_name, part_def in data["parts"].items():
+            active_patterns = []  # Track overlapping patterns within this part
+
+            logger.debug("Validating strum patterns in part '%s'", part_name)
+
+            for measure_idx, measure in enumerate(part_def["measures"], 1):
+                for event in measure.get("events", []):
+                    if event.get("type") != "strumPattern":
+                        continue
+
+                    logger.debug(f"Found strum pattern in part '{part_name}' measure {measure_idx}")
+
+                    pattern = event.get("pattern", [])
+                    measures_spanned = event.get("measures", 1)
+                    start_beat = event.get("startBeat", 1.0)
+
+                    # Validate pattern length
+                    expected_length = expected_positions * measures_spanned
+                    if len(pattern) != expected_length:
+                        logger.error(f"Strum pattern length mismatch in part '{part_name}': got {len(pattern)}, expected {expected_length}")
+                        return {
+                            "isError": True,
+                            "errorType": "validation_error",
+                            "part": part_name,
+                            "measure": measure_idx,
+                            "message": f"Strum pattern in part '{part_name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
+                            "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
+                        }
+
+                    # Validate pattern values
+                    for i, direction in enumerate(pattern):
+                        if direction not in ["D", "U", ""]:
+                            logger.error(f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'")
+                            return {
+                                "isError": True,
+                                "errorType": "validation_error",
+                                "part": part_name,
+                                "measure": measure_idx,
+                                "message": f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'",
+                                "suggestion": "Use 'D' for down, 'U' for up, or '' for no strum"
+                            }
+
+                    # Check for pattern overlaps within this part
+                    pattern_info = {
+                        "start_measure": measure_idx,
+                        "end_measure": measure_idx + measures_spanned - 1,
+                        "start_beat": start_beat
+                    }
+
+                    for existing_pattern in active_patterns:
+                        if (pattern_info["start_measure"] <= existing_pattern["end_measure"] and
+                            pattern_info["end_measure"] >= existing_pattern["start_measure"]):
+                            logger.error(f"Overlapping strum patterns detected in part '{part_name}'")
+                            return {
+                                "isError": True,
+                                "errorType": "conflict_error",
+                                "part": part_name,
+                                "measure": measure_idx,
+                                "message": f"Overlapping strum patterns detected in part '{part_name}'",
+                                "suggestion": "Only one strum pattern can be active at a time within a part"
+                            }
+
+                    active_patterns.append(pattern_info)
+                    logger.debug(f"Strum pattern validated in part '{part_name}': {measures_spanned} measures, {len(pattern)} positions")
+
+        logger.debug("Strum pattern validation passed")
+        return {"isError": False}
 
 class GraceNote(MusicalEvent, type="graceNote"):
     """Grace note - small note played quickly before main note."""
@@ -442,6 +524,52 @@ class GraceNote(MusicalEvent, type="graceNote"):
             sscript_grace = self.convert_to_subscript(str(self.graceFret))
 
         return f"{sscript_grace}{self.fret}"
+    
+    @classmethod
+    def validate_grace_note_conflicts(cls, grace_notes: List[Dict], events_by_position: Dict, part_name: str, measure: int) -> Dict[str, Any]:
+        """
+        Check for conflicts between grace notes and main notes in parts-based schema.
+        """
+        for grace_note in grace_notes:
+            string_num = grace_note.get("string")
+            beat = grace_note.get("beat")
+
+            # Check if there's a main note at the same position
+            position_key = f"{string_num}_{beat}"
+            if position_key not in events_by_position:
+                return {
+                    "isError": True,
+                    "errorType": "validation_error",
+                    "part": part_name,
+                    "measure": measure,
+                    "beat": beat,
+                    "message": f"Grace note in part '{part_name}' on string {string_num} has no target note at beat {beat}",
+                    "suggestion": "Grace notes must lead into a main note at the same beat and string"
+                }
+
+        return {"isError": False}
+    
+    @classmethod
+    def validate_grace_note_timing(cls, beat: float, time_sig: str, part_name: str, measure: int) -> Dict[str, Any]:
+        """
+        Validate grace note timing for parts-based schema.
+        """
+        config = get_time_signature_config(time_sig)
+        max_beat = max(config["valid_beats"])
+
+        # Grace notes should not be at the very end of a measure
+        if beat >= max_beat:
+            return {
+                "isError": True,
+                "errorType": "validation_error",
+                "part": part_name,
+                "measure": measure,
+                "beat": beat,
+                "message": f"Grace note in part '{part_name}' has invalid timing at beat {beat}",
+                "suggestion": f"Grace notes should be placed before beat {max_beat}"
+            }
+
+        return {"isError": False}
 
 class Dynamic(NotationEvent, type="dynamic"):
     """Standalone dynamic marking that affects following notes/chords."""
