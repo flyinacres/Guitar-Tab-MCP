@@ -36,6 +36,10 @@ class Instrument(Enum):
     """Supported string instruments."""
     GUITAR = "guitar"
     UKULELE = "ukulele"
+    BASS = "bass"         
+    MANDOLIN = "mandolin"  
+    BANJO = "banjo"  
+    SEVEN_STRING = "seven string"      
 
 class InstrumentConfig:
     """Configuration for string instruments."""
@@ -52,16 +56,37 @@ class InstrumentConfig:
 # Instrument configurations
 INSTRUMENT_CONFIGS = {
     Instrument.GUITAR: InstrumentConfig(
-        name="Guitar",
+        name="guitar",
         strings=6,
         tuning=["E", "A", "D", "G", "B", "E"]
     ),
     Instrument.UKULELE: InstrumentConfig(
-        name="Ukulele",
+        name="ukulele",
         strings=4, 
         tuning=["G", "C", "E", "A"]
+    ),
+        Instrument.BASS: InstrumentConfig(
+        name="bass",
+        strings=4,
+        tuning=["E", "A", "D", "G"]  # Standard bass tuning
+    ),
+    Instrument.MANDOLIN: InstrumentConfig(
+        name="mandolin", 
+        strings=8,  # 4 courses, but 8 strings
+        tuning=["G", "G", "D", "D", "A", "A", "E", "E"]
+    ),
+    Instrument.BANJO: InstrumentConfig(
+        name="banjo",
+        strings=5,
+        tuning=["D", "G", "B", "D", "g"]  # Open G tuning
+    ),
+    Instrument.SEVEN_STRING: InstrumentConfig(
+        name="seven string",
+        strings=7,
+        tuning=["B", "E", "A", "D", "G", "b", "e"]
     )
-}
+    }
+
 
 def get_instrument_config(instrument_str: str) -> InstrumentConfig:
     """Get configuration for instrument string."""
@@ -73,6 +98,7 @@ def get_max_string(instrument_str: str = "guitar") -> int:
     """Get maximum string number for instrument."""
     config = get_instrument_config(instrument_str)
     return config.strings
+
 
 # ============================================================================
 # Dynamic and Emphasis Constants

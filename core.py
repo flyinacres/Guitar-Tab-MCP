@@ -18,7 +18,6 @@ Key Enhancements:
 import sys
 import logging
 from typing import Dict, List, Any, Tuple, Optional
-from tab_models import NotationEvent
 
 
 from tab_constants import (
@@ -26,11 +25,15 @@ from tab_constants import (
     get_instrument_config
 )
 from tab_models import (
-    Note, PalmMute, Chuck, Dynamic, StrumPattern, Chord,
-    GraceNote, Slide, Bend, HammerOn, PullOff,
-    TabRequest, PartInstance,
-    process_song_structure
+    TabRequest, PartInstance, process_song_structure
 )
+
+from notation_events import (
+    NotationEvent,
+    Note, PalmMute, Chuck, Dynamic, StrumPattern, Chord,
+    GraceNote, Slide, Bend, HammerOn, PullOff
+)
+
 from time_signatures import (
     get_time_signature_config,
     calculate_char_position,
