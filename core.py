@@ -26,6 +26,8 @@ from tab_constants import (
     get_instrument_config
 )
 from tab_models import (
+    Note, PalmMute, Chuck, Dynamic, StrumPattern, Chord,
+    GraceNote, Slide, Bend, HammerOn, PullOff,
     TabRequest, PartInstance,
     process_song_structure
 )
@@ -217,44 +219,43 @@ def process_measure_for_display_layers(
     Process a single measure and populate all display layers.
     """
     for event in measure.get("events", []):
-        event_type = event.get("type")
-        new_event = NotationEvent.from_dict(event)
-        beat = event.get("beat") or event.get("startBeat")
+        event_class = NotationEvent.from_dict(event)
+        beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
 
+        # Only working with beat-based logic here
         if beat is None:
             continue
 
         char_position = calculate_char_position(beat, measure_idx, time_signature)
 
         # Process different event types for appropriate layers
-        if event_type == "chord":
-            # Chord names layer
-            if new_event.chordName:
-                place_annotation_text(layers[new_event.layer], char_position, new_event.chordName, total_width)
+        match event_class:
+            case Chord():
+                # Chord names layer
+                if event_class.chordName:
+                    place_annotation_text(layers[event_class.layer], char_position, event_class.chordName, total_width)
 
-            # Emphasis on chords goes to dynamics layer
-            emphasis = event.get("emphasis")
-            if emphasis:
-                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, emphasis, total_width)
+                # Emphasis on chords goes to dynamics layer
+                if event_class.emphasis:
+                    place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, event_class.emphasis, total_width)
 
-        elif event_type == "note":
-            # Emphasis on notes goes to dynamics layer
-            emphasis = event.get("emphasis")
-            if emphasis:
-                place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, emphasis, total_width)
+            case Note():
+                # Emphasis on notes goes to dynamics layer
+                if event_class.emphasis:
+                    place_annotation_text(layers[DisplayLayer.DYNAMICS], char_position, event_class.emphasis, total_width)
 
-        elif event_type == "palmMute":
-            place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
+            case PalmMute():
+                place_annotation_text(layers[event_class.layer], char_position, event_class.generate_notation(), total_width)
 
-        elif event_type == "chuck":
-            place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
+            case Chuck():
+                place_annotation_text(layers[event_class.layer], char_position, event_class.generate_notation(), total_width)
 
-        elif event_type == "dynamic":
-            if new_event.dynamic:
-                place_annotation_text(layers[new_event.layer], char_position, new_event.generate_notation(), total_width)
+            case Dynamic():
+                if event_class.dynamic:
+                    place_annotation_text(layers[event_class.layer], char_position, event_class.generate_notation(), total_width)
 
-        elif event_type == "strumPattern":
-            new_event.process_strum_pattern(measure_idx, time_signature, layers[DisplayLayer.STRUM_PATTERN], total_width)
+            case StrumPattern():
+                event_class.process_strum_pattern(measure_idx, time_signature, layers[event_class.layer], total_width)
 
 
 def place_measure_events(
@@ -284,22 +285,35 @@ def place_measure_events(
     logger.debug(f"Placing events for measure {measure_number} (offset {measure_offset})")
 
     for event in measure.get("events", []):
-        event_type = event.get("type")
+        event_class = NotationEvent.from_dict(event)
 
-        # Skip annotation events - they're handled in display layers
-        if event_type in ["palmMute", "chuck", "strumPattern", "dynamic"]:
-            logger.debug(f"Skipping {event_type} - handled in display layers")
+        if isinstance(event_class, (PalmMute, Chuck, StrumPattern, Dynamic)):
+            logger.debug(f"Skipping {event_class._type} - handled in display layers")
             graceNotePlaced = False
             continue
 
         # Handle grace notes specially
-        if event_type == "graceNote":
-            grace_warnings = place_grace_note_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
-            warnings.extend(grace_warnings)
+        if isinstance(event_class, (GraceNote)):
+            char_position = calculate_char_position(event_class.beat, measure_offset, time_signature)
+            notation = event_class.generate_notation()
+            string_lines[event_class.string - 1] = replace_chars_at_position(string_lines[event_class.string - 1], char_position, notation)
+
+            # Update warning for new shorter notation
+            if len(notation) > 2:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Grace note notation '{notation}' may require template adjustment",
+                    "suggestion": f"Grace note uses {len(notation)} character positions"
+                })
+
+            logger.debug(f"Placed grace note '{notation}' at position {char_position}")
+            
             graceNotePlaced = True
             continue
 
-        if event_type == "note" and graceNotePlaced:
+        if isinstance(event_class, (Note)) and graceNotePlaced:
             graceNotePlaced = False
             continue
         
@@ -312,84 +326,6 @@ def place_measure_events(
     return warnings
 
 
-def convert_to_superscript(digit_string: str) -> str:
-    """Convert digit string to superscript Unicode."""
-    superscript_map = {
-        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
-    }
-
-    result = ""
-    for char in digit_string:
-        if char in superscript_map:
-            result += superscript_map[char]
-        else:
-            result += char  # Keep non-digits as-is
-    return result
-
-def convert_to_subscript(digit_string: str) -> str:
-    """Convert digit string to subscript Unicode."""
-    subscript_map = {
-        '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
-        '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
-    }
-
-    result = ""
-    for char in digit_string:
-        if char in subscript_map:
-            result += subscript_map[char]
-        else:
-            result += char  # Keep non-digits as-is
-    return result
-
-
-def place_grace_note_on_tab(
-    event: Dict[str, Any],
-    string_lines: List[str],
-    measure_offset: int,
-    measure_number: int,
-    time_signature: str
-) -> List[Dict[str, Any]]:
-    """Place grace note on tab with superscript notation."""
-    warnings = []
-
-    string_num = event["string"]
-    beat = event["beat"]
-    main_fret = str(event["fret"])
-    grace_fret = str(event["graceFret"])
-    grace_type = event.get("graceType", "acciaccatura")
-
-    char_position = calculate_char_position(beat, measure_offset, time_signature)
-    line_index = string_num - 1  # Convert 1-indexed to 0-indexed
-
-    # Convert grace fret to superscript
-    superscript_grace = convert_to_superscript(grace_fret)
-
-    # Format grace note notation
-    if grace_type == "acciaccatura":
-        # Quick grace note: ³5
-        notation = f"{superscript_grace}{main_fret}"
-    else:
-        # Appoggiatura: ₃5 (using subscript for distinction)
-        subscript_grace = convert_to_subscript(grace_fret)
-        notation = f"{subscript_grace}{main_fret}"
-
-    string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, notation)
-
-    # Update warning for new shorter notation
-    if len(notation) > 2:
-        warnings.append({
-            "warningType": "formatting_warning",
-            "measure": measure_number,
-            "beat": beat,
-            "message": f"Grace note notation '{notation}' may require template adjustment",
-            "suggestion": f"Grace note uses {len(notation)} character positions"
-        })
-
-    logger.debug(f"Placed grace note '{notation}' at position {char_position}")
-    return warnings
-
-
 def place_event_on_tab(
     event: Dict[str, Any],
     string_lines: List[str],
@@ -398,169 +334,105 @@ def place_event_on_tab(
     time_signature: str
 ) -> List[Dict[str, Any]]:
     """
-     version of place_event_on_tab with emphasis support.
+    version of place_event_on_tab with emphasis support.
 
     Places musical events on tab lines and handles emphasis markings
     by adjusting the notation (when possible in UTF-8 format).
     """
     warnings = []
-    event_type = event.get("type")
-    emphasis = event.get("emphasis")
+    event_class = NotationEvent.from_dict(event)
+    emphasis = event_class.emphasis
 
-    if event_type == "note":
-        string_num = event["string"]
-        beat = event["beat"]
-        fret = event["fret"]
-        vibrato = event.get("vibrato", False)
+    match event_class:
+        case Note():
+            char_position = calculate_char_position(event_class.beat, measure_offset, time_signature)
+            fret_str = event_class.generate_notation()
+            string_lines[event_class.string - 1] = replace_chars_at_position(string_lines[event_class.string - 1], char_position, fret_str)
 
-        char_position = calculate_char_position(beat, measure_offset, time_signature)
-        line_index = string_num - 1  # Convert 1-indexed to 0-indexed
-
-        # Handle muted strings and vibrato
-        if isinstance(fret, str) and fret.lower() == "x":
-            fret_str = "x"
-        else:
-            fret_str = str(fret)
-            if vibrato:
-                fret_str += "~"
-
-        print(f"DEBUG: Placing fret {fret} at position {char_position} on string {string_num}", file=sys.stderr)
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret_str)
-        print(f"DEBUG: Line after: {string_lines[line_index]}", file=sys.stderr)
-
-        # Warn about multi-digit frets or vibrato that may cause alignment issues
-        if len(fret_str) > 1:
-            warnings.append({
-                "warningType": "formatting_warning",
-                "measure": measure_number,
-                "beat": beat,
-                "message": f"Multi-digit fret ({fret_str}) may affect template alignment",
-                "suggestion": f"Fret {fret_str} uses {len(fret_str)} character positions"
-            })
-
-    elif event_type == "chord":
-        beat = event["beat"]
-        char_position = calculate_char_position(beat, measure_offset, time_signature)
-
-        max_fret_width = 0
-        for fret_info in event["frets"]:
-            string_num = fret_info["string"]
-            fret = str(fret_info["fret"])
-            line_index = string_num - 1
-
-            string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret)
-            max_fret_width = max(max_fret_width, len(fret))
-
-        # Warn about chords with wide fret numbers
-        if max_fret_width > 1:
-            warnings.append({
-                "warningType": "formatting_warning",
-                "measure": measure_number,
-                "beat": beat,
-                "message": f"Chord with multi-digit frets may affect alignment",
-                "suggestion": f"Chord requires {max_fret_width} character positions"
-            })
-
-    elif event_type in ["hammerOn", "pullOff"]:
-        string_num = event["string"]
-        beat = event["startBeat"]
-        from_fret = str(event["fromFret"])
-        to_fret = str(event["toFret"])
-        symbol = "h" if event_type == "hammerOn" else "p"
-        vibrato = event.get("vibrato", False)
-
-        char_position = calculate_char_position(beat, measure_offset, time_signature)
-        line_index = string_num - 1
-
-        # Compact format: "3h5" or "10p12"
-        technique_str = f"{from_fret}{symbol}{to_fret}"
-
-        # Add vibrato notation if specified (applies to the destination note)
-        if vibrato:
-            technique_str += "~"
-
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
-
-        # Warn about wide technique notations
-        if len(technique_str) > 3:
-            warnings.append({
-                "warningType": "formatting_warning",
-                "measure": measure_number,
-                "beat": beat,
-                "message": f"Technique notation '{technique_str}' may require template adjustment",
-                "suggestion": f"Technique uses {len(technique_str)} character positions"
-            })
-
-    elif event_type == "slide":
-        string_num = event["string"]
-        beat = event["startBeat"]
-        from_fret = str(event["fromFret"])
-        to_fret = str(event["toFret"])
-        symbol = "/" if event["direction"] == "up" else "\\"
-        vibrato = event.get("vibrato", False)
-
-        char_position = calculate_char_position(beat, measure_offset, time_signature)
-        line_index = string_num - 1
-
-        # Compact format: "3/5" or "12\8"
-        technique_str = f"{from_fret}{symbol}{to_fret}"
-
-        # Add vibrato notation if specified (applies to the destination note)
-        if vibrato:
-            technique_str += "~"
-
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
-
-        if len(technique_str) > 3:
-            warnings.append({
-                "warningType": "formatting_warning",
-                "measure": measure_number,
-                "beat": beat,
-                "message": f"Slide notation '{technique_str}' may require template adjustment",
-                "suggestion": f"Slide uses {len(technique_str)} character positions"
-            })
-
-    elif event_type == "bend":
-        string_num = event["string"]
-        beat = event["beat"]
-        fret = event["fret"]
-        semitones = event.get("semitones", 1.0)
-        vibrato = event.get("vibrato", False)
-
-        char_position = calculate_char_position(beat, measure_offset, time_signature)
-        line_index = string_num - 1
-
-        # Handle muted strings in bends (unusual but possible)
-        if isinstance(fret, str) and fret.lower() == "x":
-            fret_str = "x"
-        else:
-            fret_str = str(fret)
-
-        # Generate  notation with Unicode fraction semitone amounts
-        semitone_str = format_semitone_string(semitones)
-        technique_str = f"{fret_str}b{semitone_str}"
-
-        # Add vibrato notation if specified
-        if vibrato:
-            technique_str += "~"
-
-        string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, technique_str)
-
-        # Add warning for wide bend notations
-        if len(technique_str) > 2:
-            warnings.append({
-                "warningType": "formatting_warning",
-                "measure": measure_number,
-                "beat": beat,
-                "message": f"Bend notation '{technique_str}' may require template adjustment",
-                "suggestion": f"Bend notation uses {len(technique_str)} character positions"
+            # Warn about multi-digit frets or vibrato that may cause alignment issues
+            if len(fret_str) > 1:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Multi-digit fret ({fret_str}) may affect template alignment",
+                    "suggestion": f"Fret {fret_str} uses {len(fret_str)} character positions"
                 })
 
+        case Chord():
+            char_position = calculate_char_position(event_class.beat, measure_offset, time_signature)
+
+            max_fret_width = 0
+            for fret_info in event_class.frets:
+                # These are not strings and frets on the class, they are in the frets object
+                string_num = fret_info["string"]
+                fret = str(fret_info["fret"])
+                line_index = string_num - 1
+
+                string_lines[line_index] = replace_chars_at_position(string_lines[line_index], char_position, fret)
+                max_fret_width = max(max_fret_width, len(fret))
+
+            # Warn about chords with wide fret numbers
+            if max_fret_width > 1:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Chord with multi-digit frets may affect alignment",
+                    "suggestion": f"Chord requires {max_fret_width} character positions"
+                })
+
+        case HammerOn() | PullOff():
+            char_position = calculate_char_position(event_class.startBeat, measure_offset, time_signature)
+            technique_str = event_class.generate_notation()
+            string_lines[event_class.string - 1] = replace_chars_at_position(string_lines[event_class.string - 1], char_position, technique_str)
+
+            # Warn about wide technique notations
+            if len(technique_str) > 3:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Technique notation '{technique_str}' may require template adjustment",
+                    "suggestion": f"Technique uses {len(technique_str)} character positions"
+                })
+
+        case Slide():
+            char_position = calculate_char_position(event_class.startBeat, measure_offset, time_signature)
+            technique_str = event_class.generate_notation()
+
+            string_lines[event_class.string - 1] = replace_chars_at_position(string_lines[event_class.string - 1], char_position, technique_str)
+
+            if len(technique_str) > 3:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Slide notation '{technique_str}' may require template adjustment",
+                    "suggestion": f"Slide uses {len(technique_str)} character positions"
+                })
+
+        case Bend():
+            char_position = calculate_char_position(event_class.beat, measure_offset, time_signature)
+            # Generate notation with Unicode fraction semitone amounts
+            technique_str = event_class.generate_notation()
+            string_lines[event_class.string - 1] = replace_chars_at_position(string_lines[event_class.string - 1], char_position, technique_str)
+
+            # Add warning for wide bend notations
+            if len(technique_str) > 2:
+                warnings.append({
+                    "warningType": "formatting_warning",
+                    "measure": measure_number,
+                    "beat": event_class.beat,
+                    "message": f"Bend notation '{technique_str}' may require template adjustment",
+                    "suggestion": f"Bend notation uses {len(technique_str)} character positions"
+                    })
+
     # Add emphasis-related warnings if needed
-    if emphasis and event_type in ["bend", "slide", "hammerOn", "pullOff"]:
+    if emphasis and isinstance(event_class, (Bend, Slide, HammerOn, PullOff)):
         # Complex techniques with emphasis may need special attention
         if len(emphasis) > 2:  # Long emphasis markings
-            beat = event.get("beat") or event.get("startBeat")
+            beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
             warnings.append({
                 "warningType": "formatting_warning",
                 "measure": measure_number,
@@ -615,62 +487,6 @@ def place_annotation_text(
                 # For now, skip placement - could implement conflict resolution
                 continue
             char_array[target_pos] = char
-
-
-def format_semitone_string(semitones: float) -> str:
-    """
-    Convert semitone float to clean notation using Unicode fractions.
-
-    This function creates more compact and visually appealing bend notation
-    by using Unicode fraction symbols instead of decimal representations.
-    This matches traditional guitar tablature conventions where fractions
-    are commonly used for bend amounts.
-
-    Args:
-        semitones: Numeric semitone value (0.5, 1.0, 1.5, 2.0, etc.)
-
-    Returns:
-        String representation using Unicode fractions where appropriate
-
-    Examples:
-        0.25 ? "¼"
-        0.5  ? "½"
-        0.75 ? "¾"
-        1.0  ? "1"
-        1.5  ? "1½"
-        2.0  ? "2"
-        2.5  ? "2½"
-        1.33 ? "1.33" (fallback for non-standard values)
-    """
-    # Handle common fraction cases with Unicode symbols
-    if semitones == 0.25:
-        return "¼"
-    if semitones == 0.5:
-        return "½"
-    if semitones == 0.75:
-        return "¾"
-    if semitones == 1.25:
-        return "1¼"
-    if semitones == 1.5:
-        return "1½"
-    if semitones == 1.75:
-        return "1¾"
-    if semitones == 2.25:
-        return "2¼"
-    if semitones == 2.5:
-        return "2½"
-    if semitones == 2.75:
-        return "2¾"
-    if semitones == 3.0:
-        return "3"
-    # Handle whole numbers (remove .0)
-    if semitones == int(semitones):
-        return str(int(semitones))
-    # Fallback for unusual decimal values
-
-    return str(semitones)
-
-
 
 
 def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:

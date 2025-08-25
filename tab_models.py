@@ -109,6 +109,17 @@ class Note(MusicalEvent, type="note"):
             if v < 0 or v > MAX_FRET:
                 raise ValueError(f"Fret must be 0-{MAX_FRET} or 'x' for muted")
         return v
+    
+    def generate_notation(self):
+        # Handle muted strings and vibrato
+        if isinstance(self.fret, str) and self.fret.lower() == "x":
+            fret_str = "x"
+        else:
+            fret_str = str(self.fret)
+            if self.vibrato:
+                fret_str += "~"
+
+        return fret_str
 
 class Chord(MusicalEvent, type="chord"):
     """ chord event with dynamics and emphasis."""
@@ -152,6 +163,18 @@ class Slide(MusicalEvent, type="slide"):
     vibrato: bool = False
     layer: DisplayLayer = DisplayLayer.DYNAMICS
 
+    def generate_notation(self):
+        symbol = "/" if self.direction == "up" else "\\"
+
+        # Compact format: "3/5" or "12\8"
+        notation = str(self.fromFret) + symbol + str(self.toFret)
+
+        # Add vibrato notation if specified (applies to the destination note)
+        if self.vibrato:
+            notation += "~"
+
+        return notation
+
 class Bend(MusicalEvent, type="bend"):
     """ bend with emphasis and vibrato."""
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
@@ -160,6 +183,77 @@ class Bend(MusicalEvent, type="bend"):
     semitones: float = Field(..., ge=MIN_SEMITONES, le=MAX_SEMITONES)
     vibrato: bool = False
     layer: DisplayLayer = DisplayLayer.DYNAMICS
+
+    def generate_notation(self) -> str:
+        """
+        Convert semitone float to clean notation using Unicode fractions.
+
+        This function creates more compact and visually appealing bend notation
+        by using Unicode fraction symbols instead of decimal representations.
+        This matches traditional guitar tablature conventions where fractions
+        are commonly used for bend amounts.
+
+        Args:
+            semitones: Numeric semitone value (0.5, 1.0, 1.5, 2.0, etc.)
+
+        Returns:
+            String representation using Unicode fractions where appropriate
+
+        Examples:
+            0.25 ? "¼"
+            0.5  ? "½"
+            0.75 ? "¾"
+            1.0  ? "1"
+            1.5  ? "1½"
+            2.0  ? "2"
+            2.5  ? "2½"
+            1.33 ? "1.33" (fallback for non-standard values)
+        """
+
+        # Handle muted strings in bends (unusual but possible)
+        if isinstance(self.fret, str) and self.fret.lower() == "x":
+            fret_str = "x"
+        else:
+            fret_str = str(self.fret)
+
+        semitone_str = str(self.semitones)
+
+        # Handle common fraction cases with Unicode symbols
+        match self.semitones:
+            case 0.25:
+                semitone_str = "¼"
+            case 0.5:
+                semitone_str = "½"
+            case 0.75:
+                semitone_str = "¾"
+            case 1.25:
+                semitone_str = "1¼"
+            case 1.5:
+                semitone_str = "1½"
+            case 1.75:
+                semitone_str = "1¾"
+            case 2.25:
+                semitone_str = "2¼"
+            case 2.5:
+                semitone_str = "2½"
+            case 2.75:
+                semitone_str = "2¾"
+            case 3.0:
+                semitone_str = "3"
+        
+        # Handle whole numbers (remove .0)
+        if self.semitones == int(self.semitones):
+            semitone_str = str(int(self.semitones))
+        # Fallback for unusual decimal values
+
+        technique_str = f"{fret_str}b{semitone_str}"
+
+        # Add vibrato notation if specified
+        if self.vibrato:
+            technique_str += "~"
+
+        return technique_str
+
 
 class HammerOn(MusicalEvent, type="hammerOn"):
     """ hammer-on with emphasis."""
@@ -176,6 +270,16 @@ class HammerOn(MusicalEvent, type="hammerOn"):
         if 'fromFret' in info.data and v <= info.data['fromFret']:
             raise ValueError("Hammer-on toFret must be higher than fromFret")
         return v
+    
+    def generate_notation(self) -> str:
+        # Compact format: "3h5" or "10p12"
+        notation = f"{self.fromFret}h{self.toFret}"
+
+        # Add vibrato notation if specified (applies to the destination note)
+        if self.vibrato:
+            notation += "~"
+
+        return notation
 
 class PullOff(MusicalEvent, type="pullOff"):
     """ pull-off with emphasis."""
@@ -192,17 +296,27 @@ class PullOff(MusicalEvent, type="pullOff"):
         if 'fromFret' in info.data and v >= info.data['fromFret']:
             raise ValueError("Pull-off toFret must be lower than fromFret")
         return v
+    
+    def generate_notation(self) -> str:
+        # Compact format: "3h5" or "10p12"
+        notation = f"{self.fromFret}p{self.toFret}"
 
+        # Add vibrato notation if specified (applies to the destination note)
+        if self.vibrato:
+            notation += "~"
+
+        return notation
+    
 # ============================================================================
 # New Event Types
 # ============================================================================
 
-class StrumPatternEvent(NotationEvent, type="strumPattern"):
+class StrumPattern(NotationEvent, type="strumPattern"):
     """Strum pattern that can span multiple measures."""
     startBeat: float = 1.0
     pattern: List[str]  # Array of strum directions: ["D", "U", "", "D", ...]
     measures: int = Field(default=1, ge=1, le=8)  # How many measures this pattern spans
-    layer: DisplayLayer = DisplayLayer.DYNAMICS
+    layer: DisplayLayer = DisplayLayer.STRUM_PATTERN
     
     @field_validator('pattern')
     @classmethod
@@ -271,7 +385,7 @@ class StrumPatternEvent(NotationEvent, type="strumPattern"):
                         logger.warning(f"Character position {char_position} exceeds total width {total_width}")
 
 
-class GraceNoteEvent(MusicalEvent, type="graceNote"):
+class GraceNote(MusicalEvent, type="graceNote"):
     """Grace note - small note played quickly before main note."""
     string: int = Field(..., ge=MIN_STRING, le=MAX_STRING)
     beat: float  # Beat where the grace note leads into
@@ -280,7 +394,47 @@ class GraceNoteEvent(MusicalEvent, type="graceNote"):
     graceType: Literal["acciaccatura", "appoggiatura"] = "acciaccatura"
     layer: DisplayLayer = DisplayLayer.DYNAMICS
 
-class DynamicEvent(NotationEvent, type="dynamic"):
+    def convert_to_superscript(self, digit_string: str) -> str:
+        """Convert digit string to superscript Unicode."""
+        superscript_map = {
+            '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+            '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
+        }
+
+        result = ""
+        for char in digit_string:
+            if char in superscript_map:
+                result += superscript_map[char]
+            else:
+                result += char  # Keep non-digits as-is
+        return result
+
+    def convert_to_subscript(self, digit_string: str) -> str:
+        """Convert digit string to subscript Unicode."""
+        subscript_map = {
+            '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+            '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'
+        }
+
+        result = ""
+        for char in digit_string:
+            if char in subscript_map:
+                result += subscript_map[char]
+            else:
+                result += char  # Keep non-digits as-is
+        return result
+
+    def generate_notation(self) -> str:
+        # Convert grace fret to superscript
+        if self.graceType == "acciaccatura":
+            sscript_grace = self.convert_to_superscript(str(self.graceFret))
+        else:
+            # Appoggiatura: ₃5 (using subscript for distinction)
+            sscript_grace = self.convert_to_subscript(str(self.graceFret))
+
+        return f"{sscript_grace}{self.fret}"
+
+class Dynamic(NotationEvent, type="dynamic"):
     """Standalone dynamic marking that affects following notes/chords."""
     beat: float
     dynamic: str = Field(..., description="Dynamic level (pp, p, mp, mf, f, ff)")
@@ -501,7 +655,7 @@ class TabRequest(BaseModel):
                     raise ValueError(f"Structure references undefined part '{part_name}'. Available parts: {available_parts}")
         return v
 
-    # ============================================================================
+# ============================================================================
 # Parts Processing Functions
 # ============================================================================
 
