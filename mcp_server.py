@@ -39,7 +39,8 @@ from validation import (
      validate_tab_data
 )
 
-from tab_models import TabResponse, TabRequest, analyze_song_structure
+from tab_models import TabResponse, TabRequest, analyze_song_structure, create_schema
+
 from tab_constants import (
     StrumDirection, DynamicLevel,
     STRUM_POSITIONS_PER_MEASURE
@@ -982,6 +983,24 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
             "error": f"Analysis error: {str(e)}"
         }
 
+@mcp.tool()
+def get_json_schema() -> Dict[str, Any]:
+    """
+    Get the JSON Schema for the Tab Generator API.
+    
+    Returns the complete JSON Schema specification that defines the valid
+    input format for tab generation, including all event types, instruments,
+    time signatures, and the parts system structure.
+    
+    Returns:
+        Complete JSON Schema for guitar tab generation requests
+    """
+    return {
+        "schema": create_schema(),
+        "version": "1.0.0",  # Version goes here, not in schema
+        "api_version": "2024.1",
+        "documentation": "https://github.com/yourusername/guitar-tab-generator"
+    }
 
 # ============================================================================
 #  MCP Server Startup

@@ -1247,7 +1247,7 @@
   },
 
   "mandolin_test": {
-    "title": "8-String Mandolin Test",
+    "title": "Mandolin Test",
     "shouldFail": false,
     "expectedError": "",
     "instrument": "mandolin",
@@ -1262,10 +1262,8 @@
                 "beat": 1.0,
                 "chordName": "G",
                 "frets": [
-                  { "string": 8, "fret": 3 },
-                  { "string": 7, "fret": 3 },
-                  { "string": 6, "fret": 2 },
-                  { "string": 5, "fret": 2 }
+                  { "string": 4, "fret": 3 },
+                  { "string": 2, "fret": 2 }
                 ]
               },
               {
@@ -1278,7 +1276,7 @@
               {
                 "type": "hammerOn",
                 "string": 3,
-                "startBeat": 2.0,
+                "startBeat": 3.0,
                 "fromFret": 0,
                 "toFret": 2
               }
@@ -1501,28 +1499,13 @@
               {
                 "type": "note",
                 "beat": 1.0,
-                "string": 8,
-                "fret": 5,
-                "emphasis": "f"
-              },
-              {
-                "type": "note",
-                "beat": 1.0,
-                "string": 7,
+                "string": 3,
                 "fret": 5,
                 "emphasis": "f"
               },
               {
                 "type": "slide",
-                "string": 6,
-                "startBeat": 2.0,
-                "fromFret": 2,
-                "toFret": 4,
-                "direction": "up"
-              },
-              {
-                "type": "slide",
-                "string": 5,
+                "string": 1,
                 "startBeat": 2.0,
                 "fromFret": 2,
                 "toFret": 4,
@@ -1530,7 +1513,7 @@
               },
               {
                 "type": "bend",
-                "string": 4,
+                "string": 1,
                 "beat": 3.0,
                 "fret": 3,
                 "semitones": 0.5,

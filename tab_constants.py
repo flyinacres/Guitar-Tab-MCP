@@ -72,8 +72,8 @@ INSTRUMENT_CONFIGS = {
     ),
     Instrument.MANDOLIN: InstrumentConfig(
         name="mandolin", 
-        strings=8,  # 4 courses, but 8 strings
-        tuning=["G", "G", "D", "D", "A", "A", "E", "E"]
+        strings=4,  # 4 courses, but 8 strings  Strings are what we specify in tabs
+        tuning=["G", "D", "A", "E"]
     ),
     Instrument.BANJO: InstrumentConfig(
         name="banjo",

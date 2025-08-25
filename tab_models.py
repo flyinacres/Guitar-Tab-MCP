@@ -414,13 +414,15 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error: {e}")
 
-
+def create_schema() -> Dict[str, Any]:
+    """Generate JSON Schema for the Guitar Tab Generator API."""
+    return TabRequest.model_json_schema()
 
 def save_schema(filename: str = "tab-schema.json"):
     """Save JSON Schema to file."""
 
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(TabRequest.model_json_schema(), f, indent=2)
+        json.dump(create_schema(), f, indent=2)
     
     print(f"✅ Schema saved to {filename}")
 
