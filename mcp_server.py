@@ -73,7 +73,8 @@ mcp = FastMCP("Tab Generator")
 @mcp.tool()
 def generate_tab(tab_data: str) -> TabResponse:
     """
-    Generate UTF-8 guitar and ukulele tablature from structured JSON input with  features.
+    Generate UTF-8 tablature for guitar, ukulele, bass, mandolin, banjo, and seven string (guitar)
+    from structured JSON input with  features.
 
     Converts tab specifications into properly formatted UTF-8 tablature with
     comprehensive support for musical notation, dynamics, strum patterns, and
