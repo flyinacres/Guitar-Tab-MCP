@@ -1,0 +1,21 @@
+# Open G Slide Test
+**Time Signature:** 4/4 | **Tempo:** 100 BPM | **Custom Tuning:** Open G
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure - Open G slide licks
+
+## Main 1
+*Open G slide licks*
+
+    G
+    1 & 2 & 3 & 4 &  
+D |-0---0/12--------|
+G |-0---------------|
+D |-0---------------|
+G |-0---------------|
+B |-0---------------|
+D |-0---------------|
+

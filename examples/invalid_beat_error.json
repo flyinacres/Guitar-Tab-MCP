@@ -2,7 +2,7 @@
   "invalid_beat_error": {
     "title": "Invalid Beat Test",
     "shouldFail": true,
-    "expectedError": "Beat 4.7 invalid for 4/4 time signature in part 'Main'",
+    "expectedError": "Validation failed: Beat 4.7 invalid for 4/4 time signature in part 'Main'",
     "timeSignature": "4/4",
     "parts": {
       "Main": {

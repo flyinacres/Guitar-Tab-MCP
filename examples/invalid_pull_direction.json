@@ -2,7 +2,7 @@
   "invalid_pull_direction": {
     "title": "Invalid Pull-off Direction Test",
     "shouldFail": true,
-    "expectedError": "Pull-off fromFret (3) must be higher than toFret (5)",
+    "expectedError": "Generation failed: toFret: Value error, Pull-off toFret must be lower than fromFret",
     "timeSignature": "4/4",
     "parts": {
       "Main": {

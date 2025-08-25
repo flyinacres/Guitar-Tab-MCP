@@ -1,0 +1,81 @@
+{
+  "drop_d_test": {
+    "title": "Drop D Guitar Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "key": "D major",
+    "tuning": [
+      "D",
+      "A",
+      "D",
+      "G",
+      "B",
+      "E"
+    ],
+    "tuning_name": "Drop D",
+    "parts": {
+      "Main": {
+        "description": "Testing Drop D tuning",
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "U",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D5",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 0
+                  },
+                  {
+                    "string": 5,
+                    "fret": 0
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "chord",
+                "beat": 3.0,
+                "chordName": "A5",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 7
+                  },
+                  {
+                    "string": 5,
+                    "fret": 7
+                  },
+                  {
+                    "string": 4,
+                    "fret": 9
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

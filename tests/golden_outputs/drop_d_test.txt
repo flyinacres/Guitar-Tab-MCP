@@ -1,0 +1,22 @@
+# Drop D Guitar Test
+**Time Signature:** 4/4 | **Tempo:** 120 BPM | **Custom Tuning:** Drop D | **Key:** D major
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure - Testing Drop D tuning
+
+## Main 1
+*Testing Drop D tuning*
+
+    D5      A5
+    1 & 2 & 3 & 4 &  
+D |-----------------|
+A |-----------------|
+D |-----------------|
+G |-2-------9-------|
+B |-0-------7-------|
+E |-0-------7-------|
+    D   U   D U D U
+

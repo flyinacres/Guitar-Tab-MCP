@@ -2,7 +2,7 @@
   "invalid_hammer_direction": {
     "title": "Invalid Hammer Direction Test",
     "shouldFail": true,
-    "expectedError": "Hammer-on fromFret (5) must be lower than toFret (3)",
+    "expectedError": "Generation failed: toFret: Value error, Hammer-on toFret must be higher than fromFret",
     "timeSignature": "4/4",
     "parts": {
       "Main": {

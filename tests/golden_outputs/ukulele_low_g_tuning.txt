@@ -1,0 +1,19 @@
+# Sharp Tuning Test
+**Time Signature:** 4/4 | **Tempo:** 120 BPM | **Custom Tuning:** Eb Standard
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+    1 & 2 & 3 & 4 &  
+D#|-0---------------|
+G#|-----2-----------|
+C#|---------1-------|
+F#|-------------3---|
+A#|-----------------|
+D#|-----------------|
+

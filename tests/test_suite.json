@@ -2134,5 +2134,160 @@
       "Chorus",
       "Outro"
     ]
+  },
+  "drop_d_test": {
+    "title": "Drop D Guitar Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "key": "D major",
+    "tuning": ["D", "A", "D", "G", "B", "E"],
+    "tuning_name": "Drop D",
+    "parts": {
+      "Main": {
+        "description": "Testing Drop D tuning",
+        "measures": [
+          {
+            "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D5",
+                "frets": [
+                  { "string": 6, "fret": 0 },
+                  { "string": 5, "fret": 0 },
+                  { "string": 4, "fret": 2 }
+                ]
+              },
+              {
+                "type": "chord",
+                "beat": 3.0,
+                "chordName": "A5",
+                "frets": [
+                  { "string": 6, "fret": 7 },
+                  { "string": 5, "fret": 7 },
+                  { "string": 4, "fret": 9 }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "ukulele_low_g_tuning": {
+    "title": "Sharp Tuning Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "tuning": ["D#", "G#", "C#", "F#", "A#", "D#"],
+    "tuning_name": "Eb Standard",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              { "type": "note", "string": 1, "beat": 1.0, "fret": 0 },
+              { "type": "note", "string": 2, "beat": 2.0, "fret": 2 },
+              { "type": "note", "string": 3, "beat": 3.0, "fret": 1 },
+              { "type": "note", "string": 4, "beat": 4.0, "fret": 3 }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "guitar_open_g_tuning": {
+    "title": "Open G Slide Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 100,
+    "tuning": ["D", "G", "D", "G", "B", "D"],
+    "tuning_name": "Open G",
+    "parts": {
+      "Main": {
+        "description": "Open G slide licks",
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  { "string": 6, "fret": 0 },
+                  { "string": 5, "fret": 0 },
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 0 },
+                  { "string": 2, "fret": 0 },
+                  { "string": 1, "fret": 0 }
+                ]
+              },
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 12,
+                "direction": "up"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "mandolin_custom_tuning": {
+    "title": "Celtic Mandolin",
+    "shouldFail": false,
+    "instrument": "mandolin",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "tuning": ["F", "C", "G", "D"],
+    "tuning_name": "Celtic Tuning",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              { "type": "note", "string": 1, "beat": 1.0, "fret": 2 },
+              { "type": "note", "string": 2, "beat": 2.0, "fret": 0 },
+              { "type": "note", "string": 3, "beat": 3.0, "fret": 2 },
+              { "type": "note", "string": 4, "beat": 4.0, "fret": 3 }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
+  },
+
+  "invalid_tuning_wrong_string_count": {
+    "title": "Invalid Tuning Test",
+    "shouldFail": true,
+    "expectedError": "Validation failed: guitar requires 6 strings, got 3",
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tuning": ["E", "A", "D"],
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [{ "type": "note", "string": 1, "beat": 1.0, "fret": 0 }]
+          }
+        ]
+      }
+    },
+    "structure": ["Main"]
   }
 }

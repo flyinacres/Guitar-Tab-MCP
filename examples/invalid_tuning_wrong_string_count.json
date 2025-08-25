@@ -1,10 +1,15 @@
 {
-  "invalid_ukulele_string": {
-    "title": "Invalid Ukulele String Test",
+  "invalid_tuning_wrong_string_count": {
+    "title": "Invalid Tuning Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: Invalid string number: 5",
-    "instrument": "ukulele",
+    "expectedError": "Validation failed: guitar requires 6 strings, got 3",
+    "instrument": "guitar",
     "timeSignature": "4/4",
+    "tuning": [
+      "E",
+      "A",
+      "D"
+    ],
     "parts": {
       "Main": {
         "measures": [
@@ -12,8 +17,8 @@
             "events": [
               {
                 "type": "note",
+                "string": 1,
                 "beat": 1.0,
-                "string": 5,
                 "fret": 0
               }
             ]

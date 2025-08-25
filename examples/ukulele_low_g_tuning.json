@@ -1,0 +1,55 @@
+{
+  "ukulele_low_g_tuning": {
+    "title": "Sharp Tuning Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "tuning": [
+      "D#",
+      "G#",
+      "C#",
+      "F#",
+      "A#",
+      "D#"
+    ],
+    "tuning_name": "Eb Standard",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 0
+              },
+              {
+                "type": "note",
+                "string": 2,
+                "beat": 2.0,
+                "fret": 2
+              },
+              {
+                "type": "note",
+                "string": 3,
+                "beat": 3.0,
+                "fret": 1
+              },
+              {
+                "type": "note",
+                "string": 4,
+                "beat": 4.0,
+                "fret": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

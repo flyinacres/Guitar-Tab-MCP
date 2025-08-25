@@ -1,0 +1,17 @@
+# Celtic Mandolin
+**Time Signature:** 4/4 | **Tempo:** 120 BPM | **Custom Tuning:** Celtic Tuning
+
+**Song Structure:**
+Main 1
+
+**Parts Defined:**
+- **Main**: 1 measure
+
+## Main 1
+
+    1 & 2 & 3 & 4 &  
+F |-2---------------|
+C |-----0-----------|
+G |---------2-------|
+D |-------------3---|
+

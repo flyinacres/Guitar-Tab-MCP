@@ -2,7 +2,7 @@
   "invalid_emphasis": {
     "title": "Invalid Emphasis Test",
     "shouldFail": true,
-    "expectedError": "Invalid emphasis value 'zzz' in part 'Main'",
+    "expectedError": "Generation failed: emphasis: Value error, Invalid emphasis 'zzz'. Valid values: ['pp', 'p', 'mp', 'mf', 'f', 'ff', '>', '-', '.', '<', 'dim.', 'cresc.']",
     "timeSignature": "4/4",
     "parts": {
       "Main": {

@@ -1,0 +1,71 @@
+{
+  "guitar_open_g_tuning": {
+    "title": "Open G Slide Test",
+    "shouldFail": false,
+    "instrument": "guitar",
+    "timeSignature": "4/4",
+    "tempo": 100,
+    "tuning": [
+      "D",
+      "G",
+      "D",
+      "G",
+      "B",
+      "D"
+    ],
+    "tuning_name": "Open G",
+    "parts": {
+      "Main": {
+        "description": "Open G slide licks",
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 0
+                  },
+                  {
+                    "string": 5,
+                    "fret": 0
+                  },
+                  {
+                    "string": 4,
+                    "fret": 0
+                  },
+                  {
+                    "string": 3,
+                    "fret": 0
+                  },
+                  {
+                    "string": 2,
+                    "fret": 0
+                  },
+                  {
+                    "string": 1,
+                    "fret": 0
+                  }
+                ]
+              },
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 12,
+                "direction": "up"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

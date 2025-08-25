@@ -13,28 +13,13 @@
               {
                 "type": "note",
                 "beat": 1.0,
-                "string": 8,
-                "fret": 5,
-                "emphasis": "f"
-              },
-              {
-                "type": "note",
-                "beat": 1.0,
-                "string": 7,
+                "string": 3,
                 "fret": 5,
                 "emphasis": "f"
               },
               {
                 "type": "slide",
-                "string": 6,
-                "startBeat": 2.0,
-                "fromFret": 2,
-                "toFret": 4,
-                "direction": "up"
-              },
-              {
-                "type": "slide",
-                "string": 5,
+                "string": 1,
                 "startBeat": 2.0,
                 "fromFret": 2,
                 "toFret": 4,
@@ -42,7 +27,7 @@
               },
               {
                 "type": "bend",
-                "string": 4,
+                "string": 1,
                 "beat": 3.0,
                 "fret": 3,
                 "semitones": 0.5,
