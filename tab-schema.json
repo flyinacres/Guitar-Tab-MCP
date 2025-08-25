@@ -117,12 +117,6 @@
     },
     "timeSignature": {
       "default": "4/4",
-      "enum": [
-        "4/4",
-        "3/4",
-        "6/8",
-        "2/4"
-      ],
       "title": "Timesignature",
       "type": "string"
     },

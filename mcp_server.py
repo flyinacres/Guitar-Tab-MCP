@@ -271,7 +271,9 @@ def generate_tab(tab_data: str) -> TabResponse:
 
     Musical Theory Rules (CRITICAL):
     - Assume D (down strums) occur on numbered beats: 1, 2, 3, 4 unless the chord pattern clearly states otherwise (such as all down strums for all beats)
-    - Assume U (up strums) occur on & beats: 1&, 2&, 3&, 4&, unless otherwise specified
+    - For 4/4 - 16th time, also known as 16th notes, The down strums are usually on the numbered beat markers,
+      such as 1, and 2, and on the 'ands' &.  Up strums are usually on the e and a markers.
+    Assume U (up strums) occur on & beats: 1&, 2&, 3&, 4&, unless otherwise specified
     - Chords are often placed on downbeats (numbered beats) unless specifically noted
     - Never place chords on & beats without explicit instruction
 

@@ -22,6 +22,8 @@ from tab_constants import (
     MAX_SEMITONES, MIN_SEMITONES
 )
 
+from time_signatures import get_supported_time_signatures
+
 # Configure logging to stderr only (stdout reserved for MCP protocol)
 logging.basicConfig(
     level=logging.DEBUG,
@@ -132,7 +134,7 @@ class TabRequest(BaseModel):
     description: str = ""
     artist: Optional[str] = None
     instrument: str = "guitar" 
-    timeSignature: Literal["4/4", "3/4", "6/8", "2/4"] = "4/4"
+    timeSignature: str = "4/4"
     tempo: Optional[int] = Field(None, ge=40, le=300)
     key: Optional[str] = None
     capo: Optional[int] = Field(None, ge=0, le=12)
@@ -159,6 +161,14 @@ class TabRequest(BaseModel):
             "$id": "https://github.com/yourusername/guitar-tab-generator/schema.json",
         }
     }
+
+    @field_validator('timeSignature')
+    @classmethod
+    def validate_time_signature(cls, v):
+        supported = get_supported_time_signatures()
+        if v not in supported:
+            raise ValueError(f'timeSignature must be one of {supported}')
+        return v
     
     @field_validator('instrument')
     @classmethod
