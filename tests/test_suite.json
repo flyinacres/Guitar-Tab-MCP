@@ -1618,5 +1618,537 @@
       }
     },
     "structure": ["Main"]
+  },
+  "full_song_structure_test": {
+    "title": "Complete Song Structure Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "tempo": 120,
+    "key": "G major",
+    "artist": "Test Band",
+    "description": "Full song demonstrating complete parts system functionality",
+    "parts": {
+      "Intro": {
+        "description": "Atmospheric fingerpicked intro",
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 3,
+                "emphasis": "p"
+              },
+              { "type": "note", "string": 2, "beat": 1.5, "fret": 0 },
+              { "type": "note", "string": 3, "beat": 2.0, "fret": 0 },
+              { "type": "note", "string": 1, "beat": 3.0, "fret": 3 },
+              { "type": "note", "string": 2, "beat": 4.0, "fret": 0 }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "mp",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              },
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 5,
+                "graceFret": 3,
+                "graceType": "acciaccatura"
+              },
+              { "type": "note", "string": 1, "beat": 3.0, "fret": 5 }
+            ]
+          }
+        ]
+      },
+      "Verse": {
+        "description": "Main verse progression with steady strumming",
+        "measures": [
+          {
+            "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "mf",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Em",
+                "frets": [
+                  { "string": 5, "fret": 2 },
+                  { "string": 4, "fret": 2 }
+                ]
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "C",
+                "frets": [
+                  { "string": 5, "fret": 3 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D",
+                "frets": [
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 3 },
+                  { "string": 1, "fret": 2 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Pre-Chorus": {
+        "description": "Building energy before chorus",
+        "measures": [
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Am",
+                "emphasis": "f",
+                "frets": [
+                  { "string": 5, "fret": 0 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              },
+              {
+                "type": "chord",
+                "beat": 2.5,
+                "chordName": "C",
+                "emphasis": "f",
+                "frets": [
+                  { "string": 5, "fret": 3 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 3 },
+                  { "string": 1, "fret": 2 }
+                ]
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 7,
+                "semitones": 1.0,
+                "emphasis": "f"
+              }
+            ]
+          }
+        ]
+      },
+      "Chorus": {
+        "description": "High energy chorus with palm muting",
+        "measures": [
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              },
+              {
+                "type": "chord",
+                "beat": 2.5,
+                "chordName": "D",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 3 },
+                  { "string": 1, "fret": 2 }
+                ]
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Em",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 5, "fret": 2 },
+                  { "string": 4, "fret": 2 }
+                ]
+              },
+              {
+                "type": "palmMute",
+                "beat": 2.5,
+                "duration": 1.5,
+                "intensity": "heavy"
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "C",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 5, "fret": 3 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              },
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 3.0,
+                "fromFret": 0,
+                "toFret": 3,
+                "emphasis": "f"
+              }
+            ]
+          },
+          {
+            "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "ff",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              },
+              { "type": "chuck", "beat": 3.0, "intensity": "heavy" }
+            ]
+          }
+        ]
+      },
+      "Bridge": {
+        "description": "Contemplative bridge with tempo change",
+        "tempo_change": 90,
+        "key_change": "E minor",
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Em",
+                "emphasis": "p",
+                "frets": [
+                  { "string": 5, "fret": 2 },
+                  { "string": 4, "fret": 2 }
+                ]
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 0,
+                "emphasis": "p"
+              },
+              {
+                "type": "slide",
+                "string": 2,
+                "startBeat": 3.0,
+                "fromFret": 0,
+                "toFret": 3,
+                "direction": "up",
+                "emphasis": "mp"
+              }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Am",
+                "emphasis": "mp",
+                "frets": [
+                  { "string": 5, "fret": 0 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              },
+              {
+                "type": "pullOff",
+                "string": 3,
+                "startBeat": 2.5,
+                "fromFret": 2,
+                "toFret": 0,
+                "emphasis": "p"
+              }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "C",
+                "emphasis": "mf",
+                "frets": [
+                  { "string": 5, "fret": 3 },
+                  { "string": 4, "fret": 2 },
+                  { "string": 2, "fret": 1 }
+                ]
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 8,
+                "semitones": 0.5,
+                "vibrato": true,
+                "emphasis": "f"
+              }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D",
+                "emphasis": "f",
+                "frets": [
+                  { "string": 4, "fret": 0 },
+                  { "string": 3, "fret": 2 },
+                  { "string": 2, "fret": 3 },
+                  { "string": 1, "fret": 2 }
+                ]
+              },
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 7,
+                "graceFret": 5,
+                "graceType": "appoggiatura",
+                "emphasis": "mf"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 7,
+                "emphasis": "mf"
+              }
+            ]
+          }
+        ]
+      },
+      "Solo": {
+        "description": "Lead guitar solo section",
+        "tempo_change": 130,
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 12,
+                "semitones": 1.5,
+                "vibrato": true,
+                "emphasis": "ff"
+              },
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 2.0,
+                "fromFret": 12,
+                "toFret": 15,
+                "direction": "up",
+                "emphasis": "f"
+              },
+              {
+                "type": "pullOff",
+                "string": 1,
+                "startBeat": 3.0,
+                "fromFret": 15,
+                "toFret": 12,
+                "emphasis": "f"
+              },
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 4.0,
+                "fromFret": 12,
+                "toFret": 14,
+                "vibrato": true,
+                "emphasis": "ff"
+              }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "note",
+                "string": 2,
+                "beat": 1.0,
+                "fret": 15,
+                "emphasis": "f"
+              },
+              {
+                "type": "bend",
+                "string": 2,
+                "beat": 1.5,
+                "fret": 15,
+                "semitones": 1.0,
+                "emphasis": "ff"
+              },
+              {
+                "type": "slide",
+                "string": 3,
+                "startBeat": 2.5,
+                "fromFret": 12,
+                "toFret": 9,
+                "direction": "down",
+                "emphasis": "mf"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 4.0,
+                "fret": 12,
+                "emphasis": "f"
+              }
+            ]
+          }
+        ]
+      },
+      "Outro": {
+        "description": "Fading outro with ritardando",
+        "tempo_change": 80,
+        "measures": [
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "mp",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 3,
+                "emphasis": "p"
+              }
+            ]
+          },
+          {
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "pp",
+                "frets": [
+                  { "string": 6, "fret": 3 },
+                  { "string": 5, "fret": 2 },
+                  { "string": 1, "fret": 3 }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Intro",
+      "Verse",
+      "Pre-Chorus",
+      "Chorus",
+      "Verse",
+      "Pre-Chorus",
+      "Chorus",
+      "Bridge",
+      "Verse",
+      "Pre-Chorus",
+      "Chorus",
+      "Solo",
+      "Chorus",
+      "Chorus",
+      "Outro"
+    ]
   }
 }
