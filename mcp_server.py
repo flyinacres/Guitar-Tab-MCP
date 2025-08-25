@@ -40,7 +40,7 @@ from typing import Dict, Any
 from fastmcp import FastMCP
 
 # Import  functionality
-from core import (
+from tab_generation import (
     generate_tab_output,
     check_attempt_limit as check_attempt_limit
 )
