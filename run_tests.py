@@ -121,12 +121,12 @@ class TabTestFramework:
         # Some tests are designed to fail
         if test_data["shouldFail"]:
             # it was supposed to fail, but it did not!
-            logger.info(f"Error for failure case {error}")
+            logger.info(f"Error for failure case '{error}'")
             if success:
                 logger.error(f"Test {test_name} was designed to fail, but passed")
                 self.test_results.append({"name": test_name, "status": "FAILED", "error": "Error condition passed"})
                 return False
-            elif "Validation failed: " + test_data["expectedError"] != error:
+            elif test_data["expectedError"] != error:
                 logger.error(f"Test {test_name} was expected to fail, but did so with the wrong error!")
                 self.test_results.append({"name": test_name, "status": "FAILED", "error": "Wrong error type"})
                 return False

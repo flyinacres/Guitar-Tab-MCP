@@ -321,7 +321,7 @@ def place_measure_events(
             continue
         
         # Handle regular musical events
-        event_warnings = place_event_on_tab(event, string_lines, measure_offset, measure_number, time_signature)
+        event_warnings = place_event_on_tab(event_class, string_lines, measure_offset, measure_number, time_signature)
         warnings.extend(event_warnings)
         graceNotePlaced = False
 
@@ -330,7 +330,7 @@ def place_measure_events(
 
 
 def place_event_on_tab(
-    event: Dict[str, Any],
+    event_class: NotationEvent,
     string_lines: List[str],
     measure_offset: int,
     measure_number: int,
@@ -343,7 +343,6 @@ def place_event_on_tab(
     by adjusting the notation (when possible in UTF-8 format).
     """
     warnings = []
-    event_class = NotationEvent.from_dict(event)
     emphasis = event_class.emphasis
 
     match event_class:

@@ -18,12 +18,15 @@ Key Enhancements:
 import sys
 import logging
 from typing import Dict, List, Any
+from pydantic import ValidationError
 
 from tab_constants import (
     VALID_EMPHASIS_VALUES,
     is_valid_emphasis,
     get_instrument_config
 )
+
+from notation_events import NotationEvent
 
 from time_signatures import (
     get_strum_positions_for_time_signature,
@@ -166,7 +169,10 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
 
             for event_idx, event in enumerate(measure.get("events", []), 1):
                 event_type = event.get("type")
-                beat = event.get("beat") or event.get("startBeat")
+                event_class = NotationEvent.from_dict(event)
+ 
+                
+                beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
 
                 if beat is None:
                     logger.warning("Event %s in part '%s' measure %s missing beat timing",

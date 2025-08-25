@@ -328,7 +328,7 @@
   "invalid_beat_error": {
     "title": "Invalid Beat Test",
     "shouldFail": true,
-    "expectedError": "Beat 4.7 invalid for 4/4 time signature in part 'Main'",
+    "expectedError": "Validation failed: Beat 4.7 invalid for 4/4 time signature in part 'Main'",
     "timeSignature": "4/4",
     "parts": {
       "Main": {
@@ -1096,7 +1096,7 @@
   "invalid_hammer_direction": {
     "title": "Invalid Hammer Direction Test",
     "shouldFail": true,
-    "expectedError": "Hammer-on fromFret (5) must be lower than toFret (3)",
+    "expectedError": "Generation failed: toFret: Value error, Hammer-on toFret must be higher than fromFret",
     "timeSignature": "4/4",
     "parts": {
       "Main": {
@@ -1122,7 +1122,7 @@
   "invalid_pull_direction": {
     "title": "Invalid Pull-off Direction Test",
     "shouldFail": true,
-    "expectedError": "Pull-off fromFret (3) must be higher than toFret (5)",
+    "expectedError": "Generation failed: toFret: Value error, Pull-off toFret must be lower than fromFret",
     "timeSignature": "4/4",
     "parts": {
       "Main": {
@@ -1148,7 +1148,8 @@
   "invalid_emphasis": {
     "title": "Invalid Emphasis Test",
     "shouldFail": true,
-    "expectedError": "Invalid emphasis value 'zzz' in part 'Main'",
+    "expectedError": "Generation failed: emphasis: Value error, Invalid emphasis 'zzz'. Valid values: ['pp', 'p', 'mp', 'mf', 'f', 'ff', '>', '-', '.', '<', 'dim.', 'cresc.']",
+
     "timeSignature": "4/4",
     "parts": {
       "Main": {
@@ -1581,7 +1582,7 @@
   "invalid_ukulele_string": {
     "title": "Invalid Ukulele String Test",
     "shouldFail": true,
-    "expectedError": "Invalid string number: 5",
+    "expectedError": "Validation failed: Invalid string number: 5",
     "instrument": "ukulele",
     "timeSignature": "4/4",
     "parts": {

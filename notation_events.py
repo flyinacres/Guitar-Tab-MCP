@@ -12,7 +12,7 @@ Updated Pydantic models compatible with V2 syntax using:
 import sys
 import logging
 from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from time_signatures import ( get_time_signature_config, calculate_char_position )
 
 # Import our constants
@@ -30,7 +30,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Clean up the validation errors from pydantic
+def clean_str(self):
+    return "\n".join(
+        f"{' -> '.join(map(str, err['loc']))}: {err['msg']}"
+        for err in self.errors()
+    )
 
+ValidationError.__str__ = clean_str
 
 # ============================================================================
 # Base Event Models
@@ -54,7 +61,11 @@ class NotationEvent(BaseModel):
             raise ValueError(f"Unknown event type: {event_type}")
 
         # Use Pydantic validation when constructing
-        return subclass(**{k: v for k, v in data.items() if k != "type"})
+        try:
+          return subclass(**{k: v for k, v in data.items() if k != "type"})
+        except Exception as e:
+          print(f"Failed to instantiate {subclass} with data {data}")
+          raise
     
     def __init_subclass__(cls, type=None, **kwargs):
         """
