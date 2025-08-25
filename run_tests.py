@@ -109,12 +109,15 @@ class TabTestFramework:
         print(''.join(diff))
         print("=== END DIFF ===\n")
     
-    def run_single_test(self, test_name: str, test_data: Dict[str, Any], update_golden: bool = False) -> bool:
+    def run_single_test(self, test_name: str, test_data: Dict[str, Any], update_golden: bool = False, show: bool = False) -> bool:
         """Run a single test case."""
         logger.info(f"Running test: {test_name}")
         
         success, output, error = self.run_mcp_test(test_data)
         
+        if show:
+            print(output)
+            
         # Some tests are designed to fail
         if test_data["shouldFail"]:
             # it was supposed to fail, but it did not!
@@ -191,9 +194,9 @@ def get_test_suite(test_file: Path) -> Dict[str, Dict[str, Any]]:
         return json.load(f)
 
 
-def get_smoke_tests() -> Dict[str, Dict[str, Any]]:
+def get_smoke_tests(test_file: Path) -> Dict[str, Dict[str, Any]]:
     """Essential smoke tests that must always pass."""
-    full_suite = get_test_suite()
+    full_suite = get_test_suite(test_file)
     return {
         "basic_chord": full_suite["basic_chord"],
         "chuck_and_strum": full_suite["chuck_and_strum"],
@@ -204,14 +207,14 @@ def get_smoke_tests() -> Dict[str, Dict[str, Any]]:
 # Test Runner Functions
 # ============================================================================
 
-def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool = False, verbose: bool = False) -> bool:
+def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool = False, verbose: bool = False, show: bool = False) -> bool:
     """Run the complete test suite."""
     project_root = Path(__file__).parent
     framework = TabTestFramework(project_root)
     
     # Select test suite
     if smoke_only:
-        test_suite = get_smoke_tests()
+        test_suite = get_smoke_tests(test_file)
         logger.info("Running smoke tests only")
     else:
         test_suite = get_test_suite(test_file)
@@ -223,7 +226,7 @@ def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool 
     # Run tests
     all_passed = True
     for test_name, test_data in test_suite.items():
-        passed = framework.run_single_test(test_name, test_data, update_golden)
+        passed = framework.run_single_test(test_name, test_data, update_golden, show)
         if not passed:
             all_passed = False
     
@@ -264,6 +267,7 @@ def main():
     parser.add_argument("--smoke", action="store_true", help="Run smoke tests only")
     parser.add_argument("--update", action="store_true", help="Update golden outputs")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("--show", action="store_true", help="Sometimes you need to see the tabs to ensure they are correct!")
     parser.add_argument("--create-json", action="store_true", help="Create JSON files from test files")
     parser.add_argument("--test-file", help="Specific test file to run")
     
@@ -295,7 +299,8 @@ def main():
             test_file,
             update_golden=args.update,
             smoke_only=args.smoke,
-            verbose=args.verbose
+            verbose=args.verbose,
+            show=args.show
         )
         
         if success:
