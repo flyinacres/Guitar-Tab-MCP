@@ -1,0 +1,61 @@
+{
+  "grace_notes_appoggiatura": {
+    "title": "Grace Notes - Appoggiatura Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 8,
+                "graceFret": 6,
+                "graceType": "appoggiatura"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 8
+              },
+              {
+                "type": "graceNote",
+                "string": 3,
+                "beat": 3.0,
+                "fret": 4,
+                "graceFret": 2,
+                "graceType": "appoggiatura",
+                "emphasis": "mf"
+              },
+              {
+                "type": "note",
+                "string": 3,
+                "beat": 3.0,
+                "fret": 4,
+                "emphasis": "mf"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

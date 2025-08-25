@@ -1,0 +1,69 @@
+{
+  "muted_strings": {
+    "title": "Muted Strings Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "D5 (muted)",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": "x"
+                  },
+                  {
+                    "string": 5,
+                    "fret": "x"
+                  },
+                  {
+                    "string": 4,
+                    "fret": 0
+                  },
+                  {
+                    "string": 3,
+                    "fret": 2
+                  },
+                  {
+                    "string": 2,
+                    "fret": 3
+                  },
+                  {
+                    "string": 1,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 3.0,
+                "fret": "x",
+                "emphasis": ">"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

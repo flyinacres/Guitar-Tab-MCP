@@ -1,0 +1,67 @@
+{
+  "combination_techniques": {
+    "title": "Combination Techniques Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 1.0,
+                "fromFret": 3,
+                "toFret": 5,
+                "vibrato": true,
+                "emphasis": "p"
+              },
+              {
+                "type": "bend",
+                "string": 2,
+                "beat": 2.0,
+                "fret": 7,
+                "semitones": 1.5,
+                "vibrato": true,
+                "emphasis": "f"
+              },
+              {
+                "type": "pullOff",
+                "string": 3,
+                "startBeat": 3.0,
+                "fromFret": 7,
+                "toFret": 5,
+                "emphasis": "mf"
+              },
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 4.0,
+                "fromFret": 12,
+                "toFret": 15,
+                "direction": "up",
+                "vibrato": true,
+                "emphasis": "ff"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

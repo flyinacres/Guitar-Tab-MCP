@@ -1,0 +1,44 @@
+{
+  "waltz_time": {
+    "title": "3/4 Waltz Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "3/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Em",
+                "frets": [
+                  {
+                    "string": 4,
+                    "fret": 2
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

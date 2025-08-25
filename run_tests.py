@@ -5,7 +5,7 @@ Guitar Tab MCP Test Framework
 ============================
 
 Comprehensive testing framework for the Guitar Tab Generator MCP server.
-Includes golden standard tests, regression testing, and automated validation.
+Includes golden standard tests, regression testing
 
 Usage:
     python run_tests.py                 # Run all tests
@@ -15,6 +15,7 @@ Usage:
 """
 
 import sys
+import os
 import json
 import difflib
 from pathlib import Path
@@ -177,9 +178,11 @@ class TabTestFramework:
 # Test Data Definitions
 # ============================================================================
 
-def get_test_suite(test_file: str = "test_suite.json") -> Dict[str, Dict[str, Any]]:
+def get_test_suite(test_file: Path) -> Dict[str, Dict[str, Any]]:
     """Load test suite from JSON file."""
-    test_file_path = Path(__file__).parent / "tests" / test_file
+    print(f"Using test file '{test_file}'")
+
+    test_file_path = Path(__file__).parent / test_file
     
     if not test_file_path.exists():
         raise FileNotFoundError(f"Test file not found: {test_file_path}")
@@ -201,7 +204,7 @@ def get_smoke_tests() -> Dict[str, Dict[str, Any]]:
 # Test Runner Functions
 # ============================================================================
 
-def run_all_tests(update_golden: bool = False, smoke_only: bool = False, verbose: bool = False) -> bool:
+def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool = False, verbose: bool = False) -> bool:
     """Run the complete test suite."""
     project_root = Path(__file__).parent
     framework = TabTestFramework(project_root)
@@ -211,7 +214,7 @@ def run_all_tests(update_golden: bool = False, smoke_only: bool = False, verbose
         test_suite = get_smoke_tests()
         logger.info("Running smoke tests only")
     else:
-        test_suite = get_test_suite()
+        test_suite = get_test_suite(test_file)
         logger.info("Running full test suite")
     
     if verbose:
@@ -229,45 +232,22 @@ def run_all_tests(update_golden: bool = False, smoke_only: bool = False, verbose
     
     return all_passed
 
-def create_example_files():
+def create_json_files(test_file):
     """Create example JSON files for manual testing."""
     project_root = Path(__file__).parent
     examples_dir = project_root / "examples"
     examples_dir.mkdir(exist_ok=True)
     
-    test_suite = get_test_suite()
+    test_suite = get_test_suite(test_file)
     
     for test_name, test_data in test_suite.items():
         example_file = examples_dir / f"{test_name}.json"
         with open(example_file, 'w', encoding='utf-8') as f:
-            json.dump(test_data, f, indent=2)
+            wrapped = {test_name: test_data}
+            json.dump(wrapped, f, indent=2)
         
         logger.info(f"Created example: {example_file}")
 
-def validate_project_structure():
-    """Validate that all required files exist."""
-    project_root = Path(__file__).parent
-    required_files = [
-        "core.py",
-        "mcp_server_parts.py", 
-        "cli.py",
-        "tab_constants.py",
-        "tab_models.py",
-        "time_signatures.py",
-        "requirements.txt"
-    ]
-    
-    missing_files = []
-    for file_name in required_files:
-        if not (project_root / file_name).exists():
-            missing_files.append(file_name)
-    
-    if missing_files:
-        logger.error(f"Missing required files: {missing_files}")
-        return False
-    
-    logger.info("Project structure validated")
-    return True
 
 # ============================================================================
 # Command Line Interface
@@ -276,32 +256,43 @@ def validate_project_structure():
 def main():
     """Main test runner entry point."""
     import argparse
+
+    # Default test file...
+    test_file = os.path.join("tests", "test_suite.json")
     
     parser = argparse.ArgumentParser(description="Guitar Tab MCP Test Framework")
     parser.add_argument("--smoke", action="store_true", help="Run smoke tests only")
     parser.add_argument("--update", action="store_true", help="Update golden outputs")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
-    parser.add_argument("--create-examples", action="store_true", help="Create example JSON files")
-    parser.add_argument("--validate-structure", action="store_true", help="Validate project structure")
+    parser.add_argument("--create-json", action="store_true", help="Create JSON files from test files")
+    parser.add_argument("--test-file", help="Specific test file to run")
     
     args = parser.parse_args()
-    
-    if args.validate_structure:
-        if validate_project_structure():
-            print("✅ Project structure is valid")
-            sys.exit(0)
-        else:
-            print("❌ Project structure validation failed")
+
+    # Validate extension
+    if args.test_file:
+        if not args.test_file.lower().endswith(".json"):
+            print("Error: File must have a .json extension", file=sys.stderr)
             sys.exit(1)
+
+        # Validate existence
+        if not os.path.isfile(args.test_file):
+            print(f"Error: File not found: {args.test_file}", file=sys.stderr)
+            sys.exit(1)
+
+        test_file = args.test_file
+        print(f"Main() Using test file '{test_file}'")
+
     
-    if args.create_examples:
-        create_example_files()
+    if args.create_json:
+        create_json_files(test_file)
         print("✅ Example files created")
         sys.exit(0)
     
     # Run tests
     try:
         success = run_all_tests(
+            test_file,
             update_golden=args.update,
             smoke_only=args.smoke,
             verbose=args.verbose

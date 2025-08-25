@@ -1,0 +1,81 @@
+{
+  "emphasis_dynamics": {
+    "title": "Emphasis and Dynamics Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "emphasis": "f",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 3
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 1,
+                    "fret": 3
+                  }
+                ]
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 5,
+                "emphasis": "p"
+              },
+              {
+                "type": "chord",
+                "beat": 3.0,
+                "chordName": "Em",
+                "emphasis": "mf",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 4.0,
+                "fret": 7,
+                "emphasis": ">"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

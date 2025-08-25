@@ -1,0 +1,50 @@
+{
+  "multi_digit_frets": {
+    "title": "Multi-Digit Frets Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "High Frets",
+                "frets": [
+                  {
+                    "string": 1,
+                    "fret": 12
+                  },
+                  {
+                    "string": 2,
+                    "fret": 10
+                  },
+                  {
+                    "string": 3,
+                    "fret": 15
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "chuck_with_intensity": {
+    "title": "Chuck with Intensity Levels Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "",
+              "",
+              "D",
+              "",
+              "",
+              "",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chuck",
+                "beat": 1.0,
+                "intensity": "heavy"
+              },
+              {
+                "type": "chord",
+                "beat": 2.0,
+                "chordName": "Em",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "chuck",
+                "beat": 3.0,
+                "intensity": "light"
+              },
+              {
+                "type": "chord",
+                "beat": 4.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 3
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

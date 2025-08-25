@@ -1,0 +1,73 @@
+{
+  "palm_muting": {
+    "title": "Palm Muting with Intensity Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "E5",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 0
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "palmMute",
+                "beat": 1.0,
+                "duration": 2.0,
+                "intensity": "heavy"
+              },
+              {
+                "type": "chord",
+                "beat": 3.0,
+                "chordName": "A5",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 0
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "palmMute",
+                "beat": 3.0,
+                "duration": 1.0,
+                "intensity": "light"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

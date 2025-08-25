@@ -1,0 +1,61 @@
+{
+  "grace_notes_acciaccatura": {
+    "title": "Grace Notes - Acciaccatura Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 5,
+                "graceFret": 3,
+                "graceType": "acciaccatura"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 5
+              },
+              {
+                "type": "graceNote",
+                "string": 2,
+                "beat": 3.0,
+                "fret": 7,
+                "graceFret": 5,
+                "graceType": "acciaccatura",
+                "emphasis": "p"
+              },
+              {
+                "type": "note",
+                "string": 2,
+                "beat": 3.0,
+                "fret": 7,
+                "emphasis": "p"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

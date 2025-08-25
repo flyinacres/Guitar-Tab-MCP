@@ -1,0 +1,88 @@
+{
+  "complex_strum_patterns": {
+    "title": "Complex Strum Patterns Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Syncopated": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "",
+              "D",
+              "",
+              "U",
+              "",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 3
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 1,
+                    "fret": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Off-beat": {
+        "measures": [
+          {
+            "strumPattern": [
+              "",
+              "U",
+              "D",
+              "U",
+              "",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "C",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 3
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  },
+                  {
+                    "string": 2,
+                    "fret": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Syncopated",
+      "Off-beat"
+    ]
+  }
+}

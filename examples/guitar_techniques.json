@@ -1,0 +1,52 @@
+{
+  "guitar_techniques": {
+    "title": "Guitar Techniques Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 3
+              },
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 2.0,
+                "fromFret": 3,
+                "toFret": 5
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 5,
+                "semitones": 1.0,
+                "vibrato": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

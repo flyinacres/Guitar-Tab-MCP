@@ -1,0 +1,38 @@
+{
+  "invalid_emphasis": {
+    "title": "Invalid Emphasis Test",
+    "shouldFail": true,
+    "expectedError": "Invalid emphasis value 'zzz' in part 'Main'",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 3,
+                "emphasis": "zzz"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

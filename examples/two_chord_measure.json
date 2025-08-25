@@ -1,0 +1,73 @@
+{
+  "two_chord_measure": {
+    "title": "Two Chord Measure",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Em",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  }
+                ]
+              },
+              {
+                "type": "chord",
+                "beat": 3.0,
+                "chordName": "D/F#",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 2
+                  },
+                  {
+                    "string": 4,
+                    "fret": 0
+                  },
+                  {
+                    "string": 3,
+                    "fret": 2
+                  },
+                  {
+                    "string": 2,
+                    "fret": 3
+                  },
+                  {
+                    "string": 1,
+                    "fret": 2
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

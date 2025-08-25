@@ -1,0 +1,50 @@
+{
+  "basic_chord": {
+    "title": "Basic Chord Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 3
+                  },
+                  {
+                    "string": 5,
+                    "fret": 2
+                  },
+                  {
+                    "string": 1,
+                    "fret": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

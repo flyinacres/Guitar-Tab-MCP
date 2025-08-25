@@ -1,0 +1,73 @@
+{
+  "waltz_advanced": {
+    "title": "3/4 Waltz with Advanced Features",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "3/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "Am",
+                "emphasis": "p",
+                "frets": [
+                  {
+                    "string": 5,
+                    "fret": 0
+                  },
+                  {
+                    "string": 4,
+                    "fret": 2
+                  },
+                  {
+                    "string": 3,
+                    "fret": 2
+                  },
+                  {
+                    "string": 2,
+                    "fret": 1
+                  }
+                ]
+              },
+              {
+                "type": "graceNote",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 5,
+                "graceFret": 3,
+                "graceType": "acciaccatura"
+              },
+              {
+                "type": "note",
+                "string": 1,
+                "beat": 2.0,
+                "fret": 5
+              },
+              {
+                "type": "palmMute",
+                "beat": 3.0,
+                "duration": 0.5,
+                "intensity": "medium"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

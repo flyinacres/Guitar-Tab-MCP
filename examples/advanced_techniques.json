@@ -1,0 +1,47 @@
+{
+  "advanced_techniques": {
+    "title": "Advanced Techniques Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 7,
+                "semitones": 1.5,
+                "vibrato": true
+              },
+              {
+                "type": "slide",
+                "string": 2,
+                "startBeat": 2.0,
+                "fromFret": 5,
+                "toFret": 8,
+                "direction": "up"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "ukulele_advanced": {
+    "title": "Ukulele Advanced Techniques",
+    "shouldFail": false,
+    "expectedError": "",
+    "instrument": "ukulele",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 1.0,
+                "chordName": "C",
+                "emphasis": "mf",
+                "frets": [
+                  {
+                    "string": 4,
+                    "fret": 0
+                  },
+                  {
+                    "string": 3,
+                    "fret": 0
+                  },
+                  {
+                    "string": 2,
+                    "fret": 0
+                  },
+                  {
+                    "string": 1,
+                    "fret": 3
+                  }
+                ]
+              },
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 2.0,
+                "fromFret": 0,
+                "toFret": 2,
+                "emphasis": "p"
+              },
+              {
+                "type": "chuck",
+                "beat": 3.0,
+                "intensity": "light"
+              },
+              {
+                "type": "palmMute",
+                "beat": 4.0,
+                "duration": 0.5,
+                "intensity": "medium"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "invalid_hammer_direction": {
+    "title": "Invalid Hammer Direction Test",
+    "shouldFail": true,
+    "expectedError": "Hammer-on fromFret (5) must be lower than toFret (3)",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "hammerOn",
+                "string": 1,
+                "startBeat": 1.0,
+                "fromFret": 5,
+                "toFret": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "invalid_beat_error": {
+    "title": "Invalid Beat Test",
+    "shouldFail": true,
+    "expectedError": "Beat 4.7 invalid for 4/4 time signature in part 'Main'",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "chord",
+                "beat": 4.7,
+                "chordName": "G",
+                "frets": [
+                  {
+                    "string": 6,
+                    "fret": 3
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

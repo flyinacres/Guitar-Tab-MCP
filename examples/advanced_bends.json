@@ -1,0 +1,61 @@
+{
+  "advanced_bends": {
+    "title": "Advanced Bend Notation Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 1.0,
+                "fret": 7,
+                "semitones": 0.5
+              },
+              {
+                "type": "bend",
+                "string": 2,
+                "beat": 2.0,
+                "fret": 9,
+                "semitones": 1.0
+              },
+              {
+                "type": "bend",
+                "string": 1,
+                "beat": 3.0,
+                "fret": 5,
+                "semitones": 1.5,
+                "vibrato": true
+              },
+              {
+                "type": "bend",
+                "string": 3,
+                "beat": 4.0,
+                "fret": 7,
+                "semitones": 0.25,
+                "emphasis": "ff"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}

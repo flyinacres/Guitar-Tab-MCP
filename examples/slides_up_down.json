@@ -1,0 +1,57 @@
+{
+  "slides_up_down": {
+    "title": "Slide Techniques Test",
+    "shouldFail": false,
+    "expectedError": "",
+    "timeSignature": "4/4",
+    "parts": {
+      "Main": {
+        "measures": [
+          {
+            "strumPattern": [
+              "D",
+              "",
+              "D",
+              "",
+              "D",
+              "U",
+              "D",
+              "U"
+            ],
+            "events": [
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 1.0,
+                "fromFret": 3,
+                "toFret": 7,
+                "direction": "up"
+              },
+              {
+                "type": "slide",
+                "string": 2,
+                "startBeat": 2.0,
+                "fromFret": 10,
+                "toFret": 5,
+                "direction": "down",
+                "vibrato": true
+              },
+              {
+                "type": "slide",
+                "string": 1,
+                "startBeat": 3.0,
+                "fromFret": 12,
+                "toFret": 15,
+                "direction": "up",
+                "emphasis": "f"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "structure": [
+      "Main"
+    ]
+  }
+}
