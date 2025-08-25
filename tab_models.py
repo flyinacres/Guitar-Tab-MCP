@@ -139,6 +139,7 @@ class TabRequest(BaseModel):
     key: Optional[str] = None
     capo: Optional[int] = Field(None, ge=0, le=12)
     tuning: Optional[List[str]] = None
+    tuning_name: Optional[str] = None  # e.g. "Drop D", "Open G"
     attempt: int = Field(default=1, ge=1, le=10)
     showBeatMarkers: bool = Field(default=True, description="Show beat counting (1 & 2 & 3 & 4 &)")
     

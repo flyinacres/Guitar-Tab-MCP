@@ -120,7 +120,8 @@ def generate_measure_group(
 
     # Generate beat markers using time signature module
     beat_line = generate_beat_markers(time_signature, num_measures)
-    beat_line = " " + beat_line
+    # Two spaces in front for note names like Db
+    beat_line = "  " + beat_line
 
 
     # Initialize string lines with correct template for time signature
@@ -130,7 +131,7 @@ def generate_measure_group(
     content_width = get_content_width(time_signature)
 
     for string_idx in range(tab_data["num_strings"]):
-        note = tab_data["tuning"][string_idx]
+        note = tab_data["tuning"][string_idx].ljust(2)
         line = note + "|"  # Start with opening separator
         for measure_idx in range(num_measures):
             line += "-" * content_width + "|"  # content + separator
@@ -529,11 +530,14 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
         return f"Error processing song structure: {e}", [{"error": str(e)}]
 
     # Get instrument configuration for string count
-    instrument_str = data.get("instrument", "guitar")
+    instrument_str = request.instrument
     try:
         config = get_instrument_config(instrument_str)
         num_strings = config.strings
-        tuning = config.tuning
+        if request.tuning:
+            tuning = request.tuning
+        else:
+            tuning = config.tuning
         logger.debug(f"Generating tab for {config.name} ({num_strings} strings)")
     except ValueError:
         num_strings = 6  # Default to guitar
@@ -599,6 +603,8 @@ def generate_header(request: TabRequest) -> List[str]:
     info_parts = [f"**Time Signature:** {request.timeSignature}"]
     if request.tempo:
         info_parts.append(f"**Tempo:** {request.tempo} BPM")
+    if request.tuning_name:
+        info_parts.append(f"**Custom Tuning:** {request.tuning_name}")
     if request.key:
         info_parts.append(f"**Key:** {request.key}")
     if request.capo:

@@ -245,7 +245,7 @@ def calculate_char_position(beat: float, measure_offset: int, time_signature: st
         base_position = config["char_positions"][closest_beat]
     
     # Add offset for measure position. +1 for the string note name
-    return 1 + base_position + (measure_offset * config["measure_width"])
+    return 2 + base_position + (measure_offset * config["measure_width"])
 
 # ============================================================================
 # Beat Marker Generation

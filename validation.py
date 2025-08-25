@@ -20,8 +20,11 @@ import logging
 from typing import Dict, List, Any
 from pydantic import ValidationError
 
+from tab_models import TabRequest
+
 from tab_constants import (
     VALID_EMPHASIS_VALUES,
+    INSTRUMENT_CONFIGS,
     is_valid_emphasis,
     get_instrument_config
 )
@@ -627,13 +630,40 @@ def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
         logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
         return measure_strum_result
 
-    # Stage 7: NEW - Instrument validation
+    # Stage 7: Instrument validation
     instrument_result = validate_instrument_events(data)
     if instrument_result["isError"]:
         logger.warning(f"Instrument validation failed: {instrument_result['message']}")
         return instrument_result
 
+    # Stage 8: Validate custom tuning
+    tuning_result = validate_custom_tuning(data)
+    if tuning_result["isError"]:
+        return tuning_result
+    
     logger.info("All validation stages passed")
+    return {"isError": False}
+
+def validate_custom_tuning(data: Dict[str, Any]) -> Dict[str, Any]:
+    request = TabRequest(**data)
+    instrument: str = request.instrument
+
+    # Get instrument configuration for string count
+    config = get_instrument_config(instrument)
+    num_strings = config.strings
+    if request.tuning:
+        tuning = request.tuning
+    else:
+        tuning = config.tuning
+
+    if len(tuning) != num_strings:
+        return {
+            "isError": True,
+            "errorType": "validation_error",
+            "message": f"{instrument} requires {num_strings} strings, got {len(tuning)}",
+            "suggestion": f"Use a properly specified tuning for the instrument"
+        }
+
     return {"isError": False}
 
 logger.info(" core validation module loaded successfully")
