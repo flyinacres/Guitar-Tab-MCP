@@ -85,7 +85,7 @@ def generate_measure_group(
     measures: List[Dict[str, Any]],
     start_index: int,
     time_signature: str,
-    tab_data: Dict[str, Any]
+    measure_info: Dict[str, Any]
 ) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
     Generate  tab section with multi-layer display.
@@ -102,7 +102,7 @@ def generate_measure_group(
         measures: List of measure dictionaries
         start_index: Starting measure number for warnings
         time_signature: Time signature string
-        tab_data: Complete tab data for global settings
+        measure_info: Data needed for measure info
 
     Returns:
         Tuple of (output_lines, warnings)
@@ -116,7 +116,7 @@ def generate_measure_group(
     logger.debug(f"Generating  measure group: {num_measures} measures of {time_signature}")
 
     # Generate all display layers
-    display_layers = generate_all_display_layers(measures, num_measures, time_signature, tab_data)
+    display_layers = generate_all_display_layers(measures, num_measures, time_signature)
 
     # Generate beat markers using time signature module
     beat_line = generate_beat_markers(time_signature, num_measures)
@@ -130,8 +130,8 @@ def generate_measure_group(
 
     content_width = get_content_width(time_signature)
 
-    for string_idx in range(tab_data["num_strings"]):
-        note = tab_data["tuning"][string_idx].ljust(2)
+    for string_idx in range(measure_info["num_strings"]):
+        note = measure_info["tuning"][string_idx].ljust(2)
         line = note + "|"  # Start with opening separator
         for measure_idx in range(num_measures):
             line += "-" * content_width + "|"  # content + separator
@@ -151,7 +151,7 @@ def generate_measure_group(
             result.append(layer_content)
 
     # Conditionally add beat markers, always add string lines
-    show_beat_markers = tab_data.get("showBeatMarkers", True)
+    show_beat_markers = measure_info.get("showBeatMarkers", True)
     if show_beat_markers:
         result.append(beat_line)
 
@@ -176,8 +176,7 @@ def generate_measure_group(
 def generate_all_display_layers(
     measures: List[Dict[str, Any]],
     num_measures: int,
-    time_signature: str,
-    tab_data: Dict[str, Any]
+    time_signature: str
 ) -> Dict[DisplayLayer, str]:
     """
     Generate all display layers for a measure group.
@@ -492,7 +491,7 @@ def place_annotation_text(
             char_array[target_pos] = char
 
 
-def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
+def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]:
     """
     Generate tab using parts format with section headers.
 
@@ -505,12 +504,11 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
     6. Strum patterns
 
     Args:
-        data: Validated tab specification dictionary
+        request: Validated tab specification dictionary
 
     Returns:
         Tuple of (tab_string, warnings_list)
     """
-    request = TabRequest(**data)
     logger.info(f"Generating parts-based tab for '{request.title}'")
 
     warnings = []
@@ -562,7 +560,7 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
             measure_group = part_measures[measure_group_start:measure_group_start + 4]
 
             # Create temporary data for existing generation logic
-            temp_data = {
+            measure_info = {
                 "title": f"{instance.display_name}",
                 "timeSignature": part_time_sig,
                 "measures": measure_group,
@@ -572,7 +570,7 @@ def generate_tab_output(data: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]
 
             # Generate measure group
             tab_section, section_warnings = generate_measure_group(
-                measure_group, measure_group_start, part_time_sig, temp_data
+                measure_group, measure_group_start, part_time_sig, measure_info
             )
             warnings.extend(section_warnings)
             output_lines.extend(tab_section)

@@ -19,7 +19,8 @@ import os
 import json
 import difflib
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional
+from tab_models import TabRequest
 import logging
 import traceback
 
@@ -54,14 +55,15 @@ class TabTestFramework:
             # Import and use the MCP functionality directly
             from validation import validate_tab_data
             from tab_generation import generate_tab_output
-            
+            request = TabRequest(**input_data)
+
             # Validate input
-            validation_result = validate_tab_data(input_data)
+            validation_result = validate_tab_data(request)
             if validation_result["isError"]:
                 return False, "", f"Validation failed: {validation_result['message']}"
             
             # Generate tab
-            tab_output, warnings = generate_tab_output(input_data)
+            tab_output, warnings = generate_tab_output(request)
             
             return True, tab_output, None
             

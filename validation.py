@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_schema(request: TabRequest) -> Dict[str, Any]:
     """
     Validate required fields and structure for parts-based schema.
 
@@ -69,7 +69,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
     required_fields = ["title", "timeSignature", "parts", "structure"]
 
     for field in required_fields:
-        if field not in data:
+        if not hasattr(request, field):
             return {
                 "isError": True,
                 "errorType": "validation_error",
@@ -78,7 +78,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
             }
 
     # Validate parts is a dict
-    if not isinstance(data["parts"], dict) or len(data["parts"]) == 0:
+    if not hasattr(request, "parts") or len(request.parts) == 0:
         return {
             "isError": True,
             "errorType": "validation_error",
@@ -88,7 +88,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Validate structure is an array
-    if not isinstance(data["structure"], list) or len(data["structure"]) == 0:
+    if not hasattr(request, "structure") or len(request.structure)== 0:
         return {
             "isError": True,
             "errorType": "validation_error",
@@ -97,8 +97,8 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Validate each part has measures array
-    for part_name, part_def in data["parts"].items():
-        if not isinstance(part_def, dict) or "measures" not in part_def:
+    for part_name, part_def in request.parts.items():
+        if not hasattr(part_def, "measures"):
             return {
                 "isError": True,
                 "errorType": "validation_error",
@@ -106,7 +106,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
                 "suggestion": "Each part must have a 'measures' array: {\"measures\": [...]}"
             }
 
-        if not isinstance(part_def["measures"], list) or len(part_def["measures"]) == 0:
+        if len(part_def.measures) == 0:
             return {
                 "isError": True,
                 "errorType": "validation_error",
@@ -115,7 +115,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         # Validate each measure has events array
-        for measure_idx, measure in enumerate(part_def["measures"], 1):
+        for measure_idx, measure in enumerate(part_def.measures, 1):
             if not isinstance(measure, dict) or "events" not in measure:
                 return {
                     "isError": True,
@@ -133,9 +133,9 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
                 }
 
     # Validate structure references existing parts
-    for part_name in data["structure"]:
-        if part_name not in data["parts"]:
-            available_parts = list(data["parts"].keys())
+    for part_name in request.structure:
+        if part_name not in request.parts:
+            available_parts = list(request.parts.keys())
             return {
                 "isError": True,
                 "errorType": "validation_error",
@@ -146,7 +146,7 @@ def validate_schema(data: Dict[str, Any]) -> Dict[str, Any]:
 
     return {"isError": False}
 
-def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_timing(request: TabRequest) -> Dict[str, Any]:
     """
     Enhanced timing validation for parts-based schema.
 
@@ -155,7 +155,7 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
     - New event types (strum patterns, grace notes, dynamics)
     - Compound time signatures (6/8 with triplet feel)
     """
-    time_sig = data.get("timeSignature", "4/4")
+    time_sig = request.timeSignature
     logger.debug("Validating timing for time signature: %s", time_sig)
 
     # Check if time signature is supported
@@ -167,10 +167,10 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
         return create_time_signature_error(time_sig)
 
     # Check every event's beat timing across all parts
-    for part_name, part_def in data["parts"].items():
+    for part_name, part_def in request.parts.items():
         logger.debug("Validating timing for part '%s'", part_name)
 
-        for measure_idx, measure in enumerate(part_def["measures"], 1):
+        for measure_idx, measure in enumerate(part_def.measures, 1):
             logger.debug("Validating timing for part '%s' measure %s", part_name, measure_idx)
 
             for event_idx, event in enumerate(measure.get("events", []), 1):
@@ -221,7 +221,7 @@ def validate_timing(data: Dict[str, Any]) -> Dict[str, Any]:
     return {"isError": False}
 
 
-def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_conflicts(request: TabRequest) -> Dict[str, Any]:
     """
     Enhanced conflict detection for parts-based schema.
 
@@ -234,15 +234,14 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
     logger.debug("Starting enhanced conflict validation")
 
     # Will need to know what instrument to verify against number of strings
-    instrument = get_instrument_config(data.get("instrument", "guitar"))
+    instrument = get_instrument_config(request.instrument)
     #print(f"events instrument: {event}, strings found: {instrument.strings}")
 
-    for part_name, part_def in data["parts"].items():
+    for part_name, part_def in request.parts.items():
         logger.debug(f"Validating conflicts in part '{part_name}'")
 
-        for measure_idx, measure in enumerate(part_def["measures"], 1):
+        for measure_idx, measure in enumerate(part_def.measures, 1):
             events_by_position = {}
-            strum_patterns = []
             grace_notes = []
 
             logger.debug(f"Validating conflicts in part '{part_name}' measure {measure_idx}")
@@ -253,11 +252,11 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
                 # Collect different event types for specialized validation
                 match event_class:
                     case StrumPattern():
-                        strum_patterns.append(event)
+                        # Maybe this used to do something useful...
                         continue
                     
                     case GraceNote():
-                        grace_notes.append(event)
+                        grace_notes.append(event_class)
                         continue
                     
                     case Dynamic() | PalmMute() | Chuck():
@@ -329,10 +328,10 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
                         "suggestion": "Move one event to different beat or different string"
                     }
 
-                events_by_position[position_key] = event
+                events_by_position[position_key] = event_class
 
                 # Validate technique-specific rules (enhanced)
-                technique_error = validate_technique_rules(event, part_name, measure_idx, beat, instrument.strings)
+                technique_error = validate_technique_rules(event_class, part_name, measure_idx, beat, instrument.strings)
                 if technique_error["isError"]:
                     return technique_error
 
@@ -345,7 +344,7 @@ def validate_conflicts(data: Dict[str, Any]) -> Dict[str, Any]:
     return {"isError": False}
 
 
-def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_emphasis_markings(request: TabRequest) -> Dict[str, Any]:
     """
     Validate emphasis markings on all musical events in parts-based schema.
 
@@ -356,10 +355,10 @@ def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     logger.debug("Validating emphasis markings")
 
-    for part_name, part_def in data["parts"].items():
+    for part_name, part_def in request.parts.items():
         logger.debug(f"Validating emphasis markings in part '{part_name}'")
 
-        for measure_idx, measure in enumerate(part_def["measures"], 1):
+        for measure_idx, measure in enumerate(part_def.measures, 1):
             for event in measure.get("events", []):
                 event_class = NotationEvent.from_dict(event)
                 emphasis = event_class.emphasis
@@ -382,39 +381,7 @@ def validate_emphasis_markings(data: Dict[str, Any]) -> Dict[str, Any]:
     return {"isError": False}
 
 
-def validate_measure_strum_patterns(measures: List[Dict[str, Any]], time_signature: str) -> Dict[str, Any]:
-    """Validate strum patterns at measure level."""
-    expected_positions = get_strum_positions_for_time_signature(time_signature)
-
-    for measure_idx, measure in enumerate(measures, 1):
-        strum_pattern = measure.get("strumPattern")
-        if strum_pattern is None:
-            continue
-
-        # Check length
-        if len(strum_pattern) != expected_positions:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "measure": measure_idx,
-                "message": f"Strum pattern in measure {measure_idx} has {len(strum_pattern)} positions, expected {expected_positions} for {time_signature}",
-                "suggestion": f"Use exactly {expected_positions} elements for {time_signature}"
-            }
-
-        # Check values
-        for i, direction in enumerate(strum_pattern):
-            if direction not in ["D", "U", ""]:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "measure": measure_idx,
-                    "message": f"Invalid strum direction '{direction}' at position {i}",
-                    "suggestion": "Use 'D', 'U', or ''"
-                }
-
-    return {"isError": False}
-
-def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx: int, beat: float, strings: int) -> Dict[str, Any]:
+def validate_technique_rules(event_class: NotationEvent, part_name: str, measure_idx: int, beat: float, strings: int) -> Dict[str, Any]:
     """
     Validate technique-specific rules that ensure playability and proper notation.
 
@@ -439,7 +406,6 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
     - palmMute: Requires beat and duration, no string/fret
     - chuck: Requires only beat, no string/fret (affects all strings)
     """
-    event_class = NotationEvent.from_dict(event)
 
     # Validate string range for all events with string field
     string_num = event_class.string
@@ -540,13 +506,13 @@ def validate_technique_rules(event: Dict[str, Any], part_name: str, measure_idx:
     return {"isError": False}
 
 
-def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_instrument_events(request: TabRequest) -> Dict[str, Any]:
     """
     Validate all events for the specified instrument.
 
     Checks string numbers and fret values against instrument limits.
     """
-    instrument_str = data.get("instrument", "guitar")
+    instrument_str = request.instrument
 
     try:
         config = get_instrument_config(instrument_str)
@@ -559,93 +525,84 @@ def validate_instrument_events(data: Dict[str, Any]) -> Dict[str, Any]:
             "suggestion": "Use 'guitar' or 'ukulele'"
         }
 
-    measures = data.get("measures", [])
+    for part_name, part_def in request.parts.items():
+        measures = part_def.measures
 
-    for measure_idx, measure in enumerate(measures, 1):
-        for _, event in enumerate(measure.get("events", []), 1):
-            event_class = NotationEvent.from_dict(event) 
-            # Validate string numbers
-            string_num = event_class.string
-            if string_num is not None:
-                if not config.validate_string(string_num):
-                    return {
-                        "isError": True,
-                        "errorType": "validation_error",
-                        "measure": measure_idx,
-                        "message": f"Invalid string {string_num} for {config.name}",
-                        "suggestion": f"Use strings 1-{config.strings} for {config.name}"
-                    }
-
-            # Validate chord frets
-            if event_class._type == Chord():
-                for fret_info in event_class.frets:
-                    chord_string = fret_info.get("string")
-                    if chord_string and not config.validate_string(chord_string):
+        for measure_idx, measure in enumerate(measures, 1):
+            for _, event in enumerate(measure.get("events", []), 1):
+                event_class = NotationEvent.from_dict(event) 
+                # Validate string numbers
+                string_num = getattr(event_class, "string", None)
+                if string_num is not None:
+                    if not config.validate_string(string_num):
                         return {
                             "isError": True,
                             "errorType": "validation_error",
                             "measure": measure_idx,
-                            "message": f"Invalid string {chord_string} in chord for {config.name}",
+                            "message": f"Invalid string {string_num} for {config.name}",
                             "suggestion": f"Use strings 1-{config.strings} for {config.name}"
                         }
+
+                # Validate chord frets
+                if isinstance( event_class, Chord):
+                    for fret_info in event_class.frets:
+                        chord_string = fret_info.get("string")
+                        if chord_string and not config.validate_string(chord_string):
+                            return {
+                                "isError": True,
+                                "errorType": "validation_error",
+                                "measure": measure_idx,
+                                "message": f"Invalid string {chord_string} in chord for {config.name}",
+                                "suggestion": f"Use strings 1-{config.strings} for {config.name}"
+                            }
 
     logger.debug(f"All events validated for {config.name}")
     return {"isError": False}
 
-def validate_tab_data(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_tab_data(request: TabRequest) -> Dict[str, Any]:
     """validation pipeline."""
-    attempt = data.get('attempt', 1)
-    logger.debug(f"Running validation for attempt {attempt}")
+    logger.debug(f"Running validation for attempt {request.attempt}")
 
     # Stage 1: Schema validation
-    schema_result = validate_schema(data)
+    schema_result = validate_schema(request)
     if schema_result["isError"]:
         return schema_result
 
     # Stage 2: Timing validation
-    timing_result = validate_timing(data)
+    timing_result = validate_timing(request)
     if timing_result["isError"]:
         return timing_result
 
     # Stage 3: Conflict validation
-    conflict_result = validate_conflicts(data)
+    conflict_result = validate_conflicts(request)
     if conflict_result["isError"]:
         return conflict_result
 
     # Stage 4: Strum pattern validation
-    strum_result = StrumPattern.validate_strum_patterns(data)
+    strum_result = StrumPattern.validate_strum_patterns(request)
     if strum_result["isError"]:
         return strum_result
 
     # Stage 5: Emphasis validation
-    emphasis_result = validate_emphasis_markings(data)
+    emphasis_result = validate_emphasis_markings(request)
     if emphasis_result["isError"]:
         return emphasis_result
 
-    # Stage 6: Measure strum pattern validation
-    measures = data.get("measures", [])
-    time_sig = data.get("timeSignature", "4/4")
-    measure_strum_result = validate_measure_strum_patterns(measures, time_sig)
-    if measure_strum_result["isError"]:
-        logger.warning(f"Measure strum pattern validation failed: {measure_strum_result['message']}")
-        return measure_strum_result
-
-    # Stage 7: Instrument validation
-    instrument_result = validate_instrument_events(data)
+    # Stage 6: Instrument validation
+    instrument_result = validate_instrument_events(request)
     if instrument_result["isError"]:
         logger.warning(f"Instrument validation failed: {instrument_result['message']}")
         return instrument_result
 
-    # Stage 8: Validate custom tuning
-    tuning_result = validate_custom_tuning(data)
+    # Stage 7: Validate custom tuning
+    tuning_result = validate_custom_tuning(request)
     if tuning_result["isError"]:
         return tuning_result
     
     logger.info("All validation stages passed")
     return {"isError": False}
 
-def validate_custom_tuning(data: Dict[str, Any]) -> Dict[str, Any]:
-    request = TabRequest(**data)
+def validate_custom_tuning(request: TabRequest) -> Dict[str, Any]:
     instrument: str = request.instrument
 
     # Get instrument configuration for string count

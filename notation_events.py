@@ -14,6 +14,7 @@ import logging
 from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator, ValidationError
 from time_signatures import ( get_time_signature_config, get_strum_positions_for_time_signature, calculate_char_position )
+from tab_models import TabRequest
 
 # Import our constants
 from tab_constants import (
@@ -393,7 +394,7 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                     else:
                         logger.warning(f"Character position {char_position} exceeds total width {total_width}")
     @classmethod
-    def validate_strum_patterns(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_strum_patterns(cls, request: TabRequest) -> Dict[str, Any]:
         """
         Validate strum pattern events for proper time signature compatibility in parts-based schema.
 
@@ -403,17 +404,17 @@ class StrumPattern(NotationEvent, type="strumPattern"):
         - No overlapping strum patterns
         - Valid strum direction values
         """
-        time_sig = data.get("timeSignature", "4/4")
+        time_sig = request.timeSignature
         expected_positions = get_strum_positions_for_time_signature(time_sig)
 
         logger.debug(f"Validating strum patterns for {time_sig} (expecting {expected_positions} positions per measure)")
 
-        for part_name, part_def in data["parts"].items():
+        for part_name, part_def in request.parts.items():
             active_patterns = []  # Track overlapping patterns within this part
 
             logger.debug("Validating strum patterns in part '%s'", part_name)
 
-            for measure_idx, measure in enumerate(part_def["measures"], 1):
+            for measure_idx, measure in enumerate(part_def.measures):
                 for event in measure.get("events", []):
                     if event.get("type") != "strumPattern":
                         continue
@@ -531,8 +532,9 @@ class GraceNote(MusicalEvent, type="graceNote"):
         Check for conflicts between grace notes and main notes in parts-based schema.
         """
         for grace_note in grace_notes:
-            string_num = grace_note.get("string")
-            beat = grace_note.get("beat")
+            # Each grace_note should be a GraceNote
+            string_num = grace_note.string
+            beat = grace_note.beat
 
             # Check if there's a main note at the same position
             position_key = f"{string_num}_{beat}"

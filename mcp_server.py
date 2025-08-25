@@ -868,13 +868,11 @@ def generate_tab(tab_data: str) -> TabResponse:
             request = TabRequest(**data_dict)
             logger.info(f" request validated: '{request.title}' (attempt {request.attempt})")
         except Exception as validation_error:
-            logger.warning(f" model validation failed, using basic validation: {validation_error}")
-            # Fall back to basic validation for backwards compatibility
-            if "title" not in data_dict:
-                data_dict["title"] = "Untitled"
+            logger.error(f" model validation failed, using basic validation: {validation_error}")
+            return None
 
         # Check attempt limit first to prevent infinite loops
-        attempt = data_dict.get('attempt', 1)
+        attempt = request.attempt
         attempt_error = check_attempt_limit(attempt)
         if attempt_error:
             logger.warning(f"Attempt limit exceeded: {attempt}")
@@ -882,7 +880,7 @@ def generate_tab(tab_data: str) -> TabResponse:
 
         #  validation pipeline
         logger.debug("Starting  validation pipeline")
-        validation_result = validate_tab_data(data_dict)
+        validation_result = validate_tab_data(request)
         if validation_result["isError"]:
             logger.warning(f" validation failed: {validation_result['message']}")
             return TabResponse(success=False, error=validation_result)
@@ -891,7 +889,7 @@ def generate_tab(tab_data: str) -> TabResponse:
 
         # Generate  tab with all new features
         logger.debug("Starting  tab generation")
-        tab_output, warnings = generate_tab_output(data_dict)
+        tab_output, warnings = generate_tab_output(request)
 
         return TabResponse(
             success=True,
@@ -954,7 +952,7 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
         logger.info(f"Generated structure analysis for '{request.title}': {analysis['total_part_instances']} instances")
 
         # Add additional analysis
-        analysis["validation"] = validate_tab_data(data_dict)
+        analysis["validation"] = validate_tab_data(request)
         analysis["title"] = request.title
         analysis["inputValid"] = not analysis["validation"]["isError"]
 
