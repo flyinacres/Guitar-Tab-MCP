@@ -4,20 +4,10 @@
 Tab Generator - MCP Server Implementation
 ========================================================
 
-FastMCP server implementation with support for:
-- Song parts/sections with automatic numbering (Verse 1, Chorus 1, etc.)
-- Complete song structure definition
-- Strum patterns and direction indicators
-- Dynamic and emphasis markings
-- Grace notes and advanced techniques
-- Multi-layer display system
-- Validation and error reporting
+FastMCP server implementation generates tabs for stringed instruments
+Useful because LLMs struggle to align things like tabs properly, but seem
+to be good at generating json that describes how the tabs should be layed out.
 
-Key MCP Implementation Details:
-- stdio transport only (stdout for JSON-RPC, stderr for logging)
-- Structured responses optimized for LLM parsing and error correction
-- Attempt tracking to prevent infinite regeneration loops
-- Comprehensive documentation with examples for all new features
 
 Usage:
     python mcp_server.py
@@ -102,7 +92,7 @@ def generate_tab(tab_data: str) -> TabResponse:
     4. **Educational Content**: Grace notes and ornaments for classical guitar instruction
     5. **Genre-Specific Notation**: Palm mutes for metal, chucks for reggae, dynamics for classical
 
-    
+
     ## QUICK SMOKE TESTS (Gold Standard)
 
     These tests must ALWAYS work. Run these after any code changes:
@@ -169,12 +159,12 @@ def generate_tab(tab_data: str) -> TabResponse:
       "structure": ["Intro", "Verse", "Chorus", "Verse", "Chorus", "Bridge", "Chorus", "Chorus"]
     }
     ```
-    
+
     ### Automatic Part Numbering
     Parts are automatically numbered based on their occurrence in the structure:
     - **Structure**: ["Intro", "Verse", "Chorus", "Verse", "Chorus"]
     - **Generated**: Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
-    
+
     ### Part Variations
     For different versions of the same section, use distinct names:
     ```json
@@ -188,7 +178,7 @@ def generate_tab(tab_data: str) -> TabResponse:
     }
     ```
     **Generated**: Verse 1 → Chorus 1 → Verse 2 → Chorus Alt 1 → Chorus Outro 1
-    
+
     ### Part-Specific Changes
     Parts can override global settings:
     ```json
@@ -204,11 +194,11 @@ def generate_tab(tab_data: str) -> TabResponse:
       }
     }
     ```
-    
+
     ### Common Part Names
     Standard song section names (case-sensitive):
     - **Intro** - Song introduction
-    - **Verse** - Main verse sections  
+    - **Verse** - Main verse sections
     - **Chorus** - Repeating chorus/refrain
     - **Bridge** - Contrasting bridge section
     - **Solo** - Instrumental solo section
@@ -378,7 +368,7 @@ def generate_tab(tab_data: str) -> TabResponse:
     ```json
     {
       "title": "Complete Song Example",
-      "artist": "Demo Artist", 
+      "artist": "Demo Artist",
       "timeSignature": "4/4",
       "tempo": 120,
       "key": "G major",
@@ -475,7 +465,7 @@ def generate_tab(tab_data: str) -> TabResponse:
 
 
     ## Error Handling & Validation
-    
+
      validation for parts system:
     - **Part references**: All structure references must exist in parts
     - **Part uniqueness**: Part names must be unique
@@ -562,35 +552,35 @@ def generate_tab(tab_data: str) -> TabResponse:
     ```
     # Song Title
     **Time Signature:** 4/4 | **Tempo:** 120 BPM | **Key:** G major
-    
+
     **Song Structure:**
     Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2 → Bridge 1 → Chorus 3
-    
+
     **Parts Defined:**
     - **Intro**: 2 measures
     - **Verse**: 4 measures - Main verse melody
     - **Chorus**: 2 measures
     - **Bridge**: 2 measures
-    
+
     ## Intro 1
     [tab content for intro]
-    
+
     ## Verse 1
     [tab content for verse]
-    
+
     ## Chorus 1
     [tab content for chorus]
-    
+
     ## Verse 2
     [identical tab content for verse]
-    
+
     ## Chorus 2
     [identical tab content for chorus]
-    
+
     ## Bridge 1
     **Tempo:** 100 BPM | **Key:** E minor
     [tab content for bridge]
-    
+
     ## Chorus 3
     [identical tab content for chorus]
     ```
@@ -624,13 +614,13 @@ def generate_tab(tab_data: str) -> TabResponse:
     }
 
     ## Time Signature Support
-    
+
     All time signatures support parts system:
     - **4/4**: 8 strum positions per measure
-    - **3/4**: 6 strum positions per measure  
+    - **3/4**: 6 strum positions per measure
     - **2/4**: 4 strum positions per measure
     - **6/8**: 6 strum positions per measure (compound time)
-    
+
     Strum Pattern Length Requirements:
 
     4/4 time: 8 positions ["D","","U","","D","U","D","U"]
@@ -832,7 +822,7 @@ def generate_tab(tab_data: str) -> TabResponse:
     **Time Signature:** 4/4
 
        C       G         Am      F
-       1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 & 
+       1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
     A|-3-------2-------|-0-------0-------|
     E|-0-------0-------|-0-------1-------|
     C|-0-------2-------|-0-------0-------|
@@ -935,36 +925,36 @@ def generate_tab(tab_data: str) -> TabResponse:
 def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
     """
     Analyze song structure without generating tablature.
-    
+
     Useful for validating parts format and understanding song organization
     before generating the full tab.
-    
+
     Args:
         tab_data: tab specification in parts format
-        
+
     Returns:
         Dictionary with detailed song structure analysis
     """
     logger.info("Received song structure analysis request")
-    
+
     try:
         data_dict = json.loads(tab_data)
         request = TabRequest(**data_dict)
-        
+
         if not (request.parts and request.structure):
             return {
                 "error": "Song structure analysis requires parts format (parts + structure)",
                 "suggestion": "Use parts format with 'parts' object and 'structure' array"
             }
-        
+
         analysis = analyze_song_structure(request)
         logger.info(f"Generated structure analysis for '{request.title}': {analysis['total_part_instances']} instances")
-        
+
         # Add additional analysis
         analysis["validation"] = validate_tab_data(data_dict)
         analysis["title"] = request.title
         analysis["inputValid"] = not analysis["validation"]["isError"]
-        
+
         return {
             "success": True,
             "analysis": analysis,
@@ -978,7 +968,7 @@ def analyze_song_structure_tool(tab_data: str) -> Dict[str, Any]:
                 for part_name, part_def in request.parts.items()
             }
         }
-        
+
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error in structure analysis: {e}")
         return {
@@ -1003,23 +993,9 @@ def main():
 
     This runs the FastMCP server in stdio mode for integration with
     Claude Desktop and other MCP clients, with full support for
-     tab features.
+    tab features.
     """
     logger.info("Starting Tab Generator MCP Server")
-    logger.info(" features available:")
-    logger.info("  • Song parts/sections with automatic numbering")
-    logger.info("  • Complete song structure definition")
-    logger.info("  • Part-specific tempo/key/time signature changes")
-    logger.info("  • Strum patterns, dynamics, grace notes")
-    logger.info("  • Multi-layer display system")
-    logger.info("  • Full backwards compatibility")
-    logger.info("Starting Tab Generator MCP Server")
-    logger.info(f" features available: strum patterns, dynamics, grace notes, multi-layer display")
-
-    # Log available constants for debugging
-    logger.debug(f"Strum directions available: {[d.value for d in StrumDirection]}")
-    logger.debug(f"Dynamic levels available: {[d.value for d in DynamicLevel]}")
-    logger.debug(f"Time signature strum positions: {STRUM_POSITIONS_PER_MEASURE}")
 
     try:
         mcp.run()
