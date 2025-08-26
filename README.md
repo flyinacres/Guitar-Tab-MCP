@@ -1,27 +1,28 @@
-# Tab Generator with Parts System
+# Stringed Instrument Tab Generator
 
-A powerful tool for generating UTF-8 guitar and ukulele tablature from structured JSON input. Features a complete song structure system with named parts, automatic numbering, and comprehensive musical notation support. Works as both an MCP server for AI integration and a standalone command-line tool.
+A comprehensive tool for generating UTF-8 tablature from structured JSON input for guitar, ukulele, bass, mandolin, banjo, and seven-string guitar. Features a complete song structure system with named parts, automatic numbering, and comprehensive musical notation support. Works as both an MCP server for AI integration and a standalone command-line tool.
 
 ## Features
 
 ### Core Features
 
-- **JSON to UTF-8 Tab Conversion**: Convert structured guitar/ukulele tab specifications into properly aligned UTF-8 tablature
+- **JSON to UTF-8 Tab Conversion**: Convert structured tab specifications into properly aligned UTF-8 tablature
 - **Song Parts System**: Define reusable song sections (Verse, Chorus, Bridge) with automatic numbering
 - **Complete Song Structure**: Build full songs with part ordering and repetition
 - **MCP Server Integration**: Works with Claude Desktop and other MCP-compatible AI tools
 - **Standalone CLI Tool**: Use independently for development and testing
-- **Multi-Instrument Support**: Guitar (6-string) and Ukulele (4-string)
+- **Multi-Instrument Support**: Guitar (6-string), Ukulele (4-string), Bass (4-string), Mandolin (4-string), Banjo (5-string), Seven-string guitar
 
 ### Musical Features
 
-- **Advanced Techniques**: Hammer-ons, pull-offs, slides, bends with Unicode fractions
-- **Emphasis & Dynamics**: Musical expression markings (f, p, mf, ff, >, etc.)
-- **Grace Notes**: Acciaccatura (quick) and appoggiatura (longer) with superscript notation
-- **Strum Patterns**: Direction indicators with measure-level control
-- **Palm Muting & Chucks**: With intensity levels (light, medium, heavy)
-- **Multiple Time Signatures**: 4/4, 3/4, 6/8, 2/4 with proper beat validation
-- **Muted Strings**: Support for "x" fret notation
+- **Playing Techniques**: Hammer-ons, pull-offs, slides, bends with Unicode fractions
+- **Musical Expression**: Dynamics and emphasis markings (f, p, mf, ff, >, etc.)
+- **Ornamental Notes**: Grace notes (acciaccatura and appoggiatura) with superscript notation
+- **Rhythmic Elements**: Strum patterns with direction indicators and measure-level control
+- **Performance Techniques**: Palm muting and chucks with intensity levels (light, medium, heavy)
+- **Time Signature Support**: 4/4, 3/4, 6/8, 2/4 with proper beat validation
+- **String Techniques**: Support for muted strings using "x" notation
+- **Custom Tunings**: Support for alternate tunings with validation
 
 ## Installation
 
@@ -34,8 +35,8 @@ A powerful tool for generating UTF-8 guitar and ukulele tablature from structure
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/guitar-tab-generator.git
-cd guitar-tab-generator
+git clone https://github.com/yourusername/stringed-instrument-tab-generator.git
+cd stringed-instrument-tab-generator
 
 # Install dependencies
 pip install -r requirements.txt
@@ -79,9 +80,9 @@ Add to your Claude Desktop configuration file:
 ```json
 {
   "mcpServers": {
-    "guitar-tab-generator": {
+    "stringed-instrument-tab-generator": {
       "command": "python",
-      "args": ["/full/path/to/guitar-tab-generator/mcp_server_parts.py"]
+      "args": ["/full/path/to/stringed-instrument-tab-generator/mcp_server.py"]
     }
   }
 }
@@ -90,10 +91,10 @@ Add to your Claude Desktop configuration file:
 **Start the MCP server:**
 
 ```bash
-python mcp_server_parts.py
+python mcp_server.py
 ```
 
-## Input Format - Parts System (Recommended)
+## Input Format - Parts System
 
 The parts system allows you to define reusable song sections with automatic numbering:
 
@@ -106,6 +107,7 @@ The parts system allows you to define reusable song sections with automatic numb
   "timeSignature": "4/4",
   "tempo": 120,
   "key": "G major",
+  "instrument": "guitar",
   "parts": {
     "Intro": {
       "description": "Fingerpicked introduction",
@@ -240,20 +242,20 @@ Override global settings per part:
 - **note**: `{"type": "note", "string": 1, "beat": 1.0, "fret": 3, "emphasis": "f"}`
 - **chord**: `{"type": "chord", "beat": 1.0, "chordName": "G", "frets": [...]}`
 
-### Guitar Techniques
+### Playing Techniques
 
 - **hammerOn**: `{"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 5, "vibrato": true}`
 - **pullOff**: `{"type": "pullOff", "string": 1, "startBeat": 1.0, "fromFret": 5, "toFret": 3, "emphasis": "p"}`
 - **slide**: `{"type": "slide", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up"}`
 - **bend**: `{"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true}`
 
-### Advanced Features
+### Ornamental and Performance Elements
 
 - **graceNote**: `{"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "graceType": "acciaccatura"}`
 - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "heavy"}`
 - **chuck**: `{"type": "chuck", "beat": 1.0, "intensity": "medium"}`
 
-### Emphasis & Dynamics
+### Musical Expression
 
 Available emphasis markings: `pp`, `p`, `mp`, `mf`, `f`, `ff`, `cresc.`, `dim.`, `<`, `>`, `-`, `.`
 
@@ -270,20 +272,23 @@ Available emphasis markings: `pp`, `p`, `mp`, `mf`, `f`, `ff`, `cresc.`, `dim.`,
 - **3/4 time**: 6 positions `["D","","U","","D","U"]`
 - **6/8 time**: 6 positions `["D","","","U","",""]`
 
-## Ukulele Support
+## Instrument Support
 
-Set the instrument field for ukulele tabs:
+### Guitar (6-string)
+
+- **Standard tuning**: E-A-D-G-B-E
+- **String numbering**: 1 (high E) to 6 (low E)
+- **Custom tunings**: Drop D, Open G, etc.
+
+### Ukulele (4-string)
 
 ```json
 {
-  "title": "Ukulele Song",
   "instrument": "ukulele",
-  "timeSignature": "4/4",
   "parts": {
     "Main": {
       "measures": [
         {
-          "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
           "events": [
             {
               "type": "chord",
@@ -300,17 +305,33 @@ Set the instrument field for ukulele tabs:
         }
       ]
     }
-  },
-  "structure": ["Main"]
+  }
 }
 ```
 
-**Ukulele String Numbering:**
+- **Standard tuning**: G-C-E-A
+- **String numbering**: 1 (A, highest pitch) to 4 (G, lowest pitch)
 
-- String 1: A (highest pitch)
-- String 2: E
-- String 3: C
-- String 4: G (lowest pitch)
+### Bass Guitar (4-string)
+
+- **Standard tuning**: E-A-D-G
+- **String numbering**: 1 (G, highest pitch) to 4 (E, lowest pitch)
+- **Optimized for bass techniques**: Slides, hammer-ons, pull-offs
+
+### Mandolin (4-string)
+
+- **Standard tuning**: G-D-A-E
+- **String numbering**: 1 (E, highest pitch) to 4 (G, lowest pitch)
+
+### Banjo (5-string)
+
+- **Open G tuning**: D-G-B-D-g
+- **String numbering**: 1 (high g) to 5 (drone string)
+
+### Seven-String Guitar
+
+- **Extended range**: B-E-A-D-G-B-E
+- **String numbering**: 1 (high E) to 7 (low B)
 
 ## Time Signatures
 
@@ -321,12 +342,25 @@ Supported time signatures with proper beat validation:
 - **2/4**: Cut time (4 strum positions)
 - **6/8**: Compound time (6 strum positions)
 
+## Custom Tunings
+
+Support for alternate tunings with automatic validation:
+
+```json
+{
+  "instrument": "guitar",
+  "tuning": ["D", "A", "D", "G", "B", "E"],
+  "tuning_name": "Drop D",
+  "parts": {...}
+}
+```
+
 ## Output Example
 
 ```
 # Complete Song Example
 **Artist:** Demo Artist
-**Time Signature:** 4/4 | **Tempo:** 120 BPM | **Key:** G major
+**Time Signature:** 4/4 | **Tempo:** 120 BPM | **Key:** G major | **Custom Tuning:** Drop D
 
 **Song Structure:**
 Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
@@ -337,46 +371,43 @@ Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
 - **Chorus**: 1 measure - Energetic chorus with palm muting
 
 ## Intro 1
+*Fingerpicked introduction*
 
-  1 & 2 & 3 & 4 &
-|-3-0-0-----------|
-|-------0---------|
-|-------0---------|
-|-----------------|
-|-----------------|
-|-----------------|
+    1 & 2 & 3 & 4 &
+E |-3-0-0-----------|
+B |-------0---------|
+G |-------0---------|
+D |-----------------|
+A |-----------------|
+D |-----------------|
 
 ## Verse 1
+*Main verse with chord progression*
 
  G
  mf
   1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
-|-3---------------|-----------------|
-|-0---------------|1----------------|
-|-0---------------|0----------------|
-|-0---------------|2----------------|
-|-2---------------|3----------------|
-|-3---------------|-----------------|
+E |-3---------------|-----------------|
+B |-0---------------|1----------------|
+G |-0---------------|0----------------|
+D |-0---------------|2----------------|
+A |-2---------------|3----------------|
+D |-3---------------|-----------------|
   D   U   D U D U   D   D   D U D U
 
 ## Chorus 1
+*Energetic chorus with palm muting*
 
  G
  f          PM(M)--
   1 & 2 & 3 & 4 &
-|-3---------------|
-|-0---------------|
-|-0---------------|
-|-0---------------|
-|-2---------------|
-|-3---------------|
+E |-3---------------|
+B |-0---------------|
+G |-0---------------|
+D |-0---------------|
+A |-2---------------|
+D |-3---------------|
   D     D   U D U
-
-## Verse 2
-[identical to Verse 1]
-
-## Chorus 2
-[identical to Chorus 1]
 ```
 
 ## Testing
@@ -394,11 +425,8 @@ python simple_test_runner.py --save
 ### Comprehensive Testing
 
 ```bash
-# Run all tests (25+ tests covering all features)
+# Run all tests
 python run_tests.py
-
-# Run only enhanced feature tests
-python run_tests.py --enhanced
 
 # Run smoke tests only
 python run_tests.py --smoke
@@ -410,9 +438,9 @@ python run_tests.py --update
 ### Test Categories
 
 - **Core Features**: Basic chords, multiple measures, strum patterns
-- **Guitar Techniques**: Hammer-ons, pull-offs, slides, bends
-- **Advanced Features**: Grace notes, emphasis, palm muting
-- **Instruments**: Guitar and ukulele support
+- **Playing Techniques**: Hammer-ons, pull-offs, slides, bends
+- **Ornamental Features**: Grace notes, emphasis, palm muting
+- **Multi-Instrument**: Guitar, ukulele, bass, mandolin, banjo, seven-string
 - **Error Handling**: Invalid inputs and edge cases
 
 ## Development
@@ -420,30 +448,19 @@ python run_tests.py --update
 ### Project Structure
 
 ```
-guitar-tab-generator/
-├── core_parts.py           # Core logic with parts system support
-├── mcp_server_parts.py     # Enhanced MCP server with parts
+stringed-instrument-tab-generator/
+├── tab_generation.py       # Core tab generation logic
+├── mcp_server.py           # MCP server implementation
 ├── cli.py                  # Command-line interface
-├── tab_models_parts.py     # Pydantic models for parts system
+├── tab_models.py           # Pydantic models for validation
+├── notation_events.py      # Event type definitions
 ├── tab_constants.py        # Constants and instrument configs
 ├── time_signatures.py     # Time signature handling
+├── validation.py           # Input validation pipeline
 ├── simple_test_runner.py   # Quick test validation
 ├── run_tests.py           # Comprehensive test framework
 ├── requirements.txt       # Python dependencies
 └── README.md              # This file
-```
-
-### Running Tests
-
-```bash
-# Validate project structure
-python run_tests.py --validate-structure
-
-# Create example files for manual testing
-python run_tests.py --create-examples
-
-# Environment validation
-python simple_test_runner.py --validate-env
 ```
 
 ## Error Handling
@@ -465,9 +482,10 @@ The tool provides structured error messages optimized for both human developers 
 
 - **Invalid beats**: Beat values that don't match time signature
 - **Technique direction**: Hammer-ons must go up, pull-offs must go down
-- **String ranges**: Guitar (1-6), Ukulele (1-4)
+- **String ranges**: Varies by instrument (Guitar: 1-6, Ukulele: 1-4, etc.)
 - **Part references**: Structure must reference defined parts
 - **Strum pattern length**: Must match time signature requirements
+- **Tuning validation**: Must match instrument string count
 
 ## Troubleshooting
 
@@ -476,7 +494,6 @@ The tool provides structured error messages optimized for both human developers 
 **MCP server not connecting:**
 
 - Verify the full path in Claude Desktop configuration
-- Use `mcp_server_parts.py` for full parts system support
 - Check that Python can find required dependencies
 
 **Parts system validation errors:**
@@ -495,9 +512,14 @@ The tool provides structured error messages optimized for both human developers 
 - Strum pattern length must match time signature
 - Valid beats depend on time signature (4/4: 1.0, 1.5, 2.0, etc.)
 
+**Instrument-specific issues:**
+
+- Verify string numbers match instrument (ukulele: 1-4, guitar: 1-6, etc.)
+- Check custom tuning string count matches instrument
+
 ### Getting Help
 
-- Check the [Issues](https://github.com/yourusername/guitar-tab-generator/issues) page
+- Check the [Issues](https://github.com/yourusername/stringed-instrument-tab-generator/issues) page
 - Run tests to validate your environment: `python simple_test_runner.py`
 - Use `--validate` flag to check input without generating output
 - Review the comprehensive test suite for examples: `python run_tests.py --create-examples`
@@ -514,4 +536,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Note:** This tool supports both educational use and professional songwriting workflows. The parts system makes it ideal for complete song arrangement and structure planning.
+This tool supports both educational use and professional music arrangement workflows. The parts system makes it ideal for complete song structure planning and multi-instrument arrangements.

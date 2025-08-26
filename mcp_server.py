@@ -64,131 +64,178 @@ mcp = FastMCP("Tab Generator")
 @mcp.tool()
 def generate_tab(tab_data: str) -> TabResponse:
     """
-    Generate UTF-8 tablature for guitar, ukulele, bass, mandolin, banjo, and seven string (guitar)
-    from structured JSON input with  features.
+Stringed Instrument Tab Generator - MCP Server Implementation
+===========================================================
+
+FastMCP server implementation for generating tablature for stringed instruments.
+Converts structured JSON specifications into properly aligned UTF-8 tablature
+with comprehensive musical notation support.
+
+Supported Instruments:
+- Guitar (6-string)
+- Ukulele (4-string) 
+- Bass (4-string)
+- Mandolin (4-string)
+- Banjo (5-string)
+- Seven-string guitar (7-string)
+
+Usage:
+    python mcp_server.py
+
+For Claude Desktop integration, add to configuration:
+{
+  "mcpServers": {
+    "stringed-instrument-tab-generator": {
+      "command": "python",
+      "args": ["/path/to/mcp_server.py"]
+    }
+  }
+}
+"""
+
+@mcp.tool()
+def generate_tab(tab_data: str) -> TabResponse:
+    """
+    Generate UTF-8 tablature for stringed instruments from structured JSON input.
 
     Converts tab specifications into properly formatted UTF-8 tablature with
     comprehensive support for musical notation, dynamics, strum patterns, and
-    advanced techniques. Provides structured error messages for LLM correction
+    playing techniques. Provides structured error messages for correction
     when input is invalid.
 
     Args:
-        tab_data: Complete tab specification with title, measures, and events
+        tab_data: Complete tab specification with title, parts, and structure
 
     Returns:
-        TabResponse with generated tab content, warnings
+        TabResponse with generated tab content and any warnings
 
-  ## LLM Notes
-  CRITICAL: Do not try to reformat the returned data, but properly interpret whitespace and newlines
-  IMPORTANT: Display the exact output without modification. Use a fixed-width font or it will not display correctly
-  The tablature sections require monospace/fixed-width formatting to maintain proper alignment
-  NEVER modify the tab content - doing so breaks the musical notation and renders the tool useless
+    ## Input Format - Parts System
 
+    The parts system allows definition of reusable song sections with automatic numbering:
 
-    ## Common Use Cases
-
-    1. **Learning Strum Patterns**: Add strum direction indicators for practice
-    2. **Musical Expression**: Use dynamics to indicate volume and articulation changes
-    3. **Advanced Techniques**: Combine bends, vibrato, and emphasis for realistic notation
-    4. **Educational Content**: Grace notes and ornaments for classical guitar instruction
-    5. **Genre-Specific Notation**: Palm mutes for metal, chucks for reggae, dynamics for classical
-
-
-    ## QUICK SMOKE TESTS (Gold Standard)
-
-    These tests must ALWAYS work. Run these after any code changes:
-
-    ### Test 1: Basic Chord with Standard Strum
     ```json
     {
-      "title": "Basic Chord Test",
-      "shouldFail": False,
-      "timeSignature": "4/4",
-      "parts": {
-          "Main": {
-              "measures": [
-                  {
-                      "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
-                      "events": [
-                          {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                              {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                          ]}
-                      ]
-                  }
-              ]
-          }
-      }
-    }
-    ```
-    Expected: Single G chord with `D   D   D U D U` strum pattern
-
-    ### Parts-Based Song Structure
-    Define reusable song sections with automatic numbering:
-    ```json
-    {
-      "title": "Complete Song",
+      "title": "Song Title",
+      "artist": "Artist Name",
+      "instrument": "guitar",
       "timeSignature": "4/4",
       "tempo": 120,
+      "key": "G major",
       "parts": {
         "Intro": {
+          "description": "Song introduction",
           "measures": [
-            {"events": [{"type": "chord", "beat": 1.0, "chordName": "G", "frets": [...]}]}
+            {
+              "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+              "events": [
+                {
+                  "type": "chord",
+                  "beat": 1.0,
+                  "chordName": "G",
+                  "frets": [
+                    {"string": 6, "fret": 3},
+                    {"string": 5, "fret": 2},
+                    {"string": 1, "fret": 3}
+                  ]
+                }
+              ]
+            }
           ]
         },
         "Verse": {
-          "description": "Main verse melody",
-          "measures": [
-            {"events": [...]},
-            {"events": [...]},
-            {"events": [...]},
-            {"events": [...]}
-          ]
+          "measures": [...]
         },
         "Chorus": {
-          "measures": [
-            {"events": [...]},
-            {"events": [...]}
-          ]
-        },
-        "Bridge": {
-          "tempo_change": 100,
-          "measures": [
-            {"events": [...]}
-          ]
+          "measures": [...]
         }
       },
-      "structure": ["Intro", "Verse", "Chorus", "Verse", "Chorus", "Bridge", "Chorus", "Chorus"]
+      "structure": ["Intro", "Verse", "Chorus", "Verse", "Chorus"]
     }
     ```
 
+    ## Supported Instruments
+
+    ### Guitar (6-string)
+    - Standard tuning: E-A-D-G-B-E
+    - String numbering: 1 (high E) to 6 (low E)
+    - Custom tunings supported
+
+    ### Ukulele (4-string)
+    ```json
+    {
+      "instrument": "ukulele",
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "events": [
+                {
+                  "type": "chord",
+                  "beat": 1.0,
+                  "chordName": "C",
+                  "frets": [
+                    {"string": 4, "fret": 0},
+                    {"string": 3, "fret": 0},
+                    {"string": 2, "fret": 0},
+                    {"string": 1, "fret": 3}
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "structure": ["Main"]
+    }
+    ```
+    - Standard tuning: G-C-E-A
+    - String numbering: 1 (A, highest) to 4 (G, lowest)
+
+    ### Bass Guitar (4-string)
+    - Standard tuning: E-A-D-G
+    - String numbering: 1 (G, highest) to 4 (E, lowest)
+
+    ### Mandolin (4-string)
+    - Standard tuning: G-D-A-E
+    - String numbering: 1 (E, highest) to 4 (G, lowest)
+
+    ### Banjo (5-string)
+    - Open G tuning: D-G-B-D-g
+    - String numbering: 1 (high g) to 5 (drone string)
+
+    ### Seven-String Guitar
+    - Extended range: B-E-A-D-G-B-E
+    - String numbering: 1 (high E) to 7 (low B)
+
+    ## Song Structure System
+
     ### Automatic Part Numbering
-    Parts are automatically numbered based on their occurrence in the structure:
-    - **Structure**: ["Intro", "Verse", "Chorus", "Verse", "Chorus"]
-    - **Generated**: Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
+    Parts are numbered based on their occurrence in the structure:
+    - Structure: ["Intro", "Verse", "Chorus", "Verse", "Chorus"]
+    - Generated: Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
 
     ### Part Variations
-    For different versions of the same section, use distinct names:
+    Create different versions using distinct names:
     ```json
     {
       "parts": {
-        "Chorus": { "measures": [...] },
-        "Chorus Alt": { "measures": [...] },
-        "Chorus Outro": { "measures": [...] }
+        "Chorus": {"measures": [...]},
+        "Chorus Alt": {"measures": [...]},
+        "Chorus Outro": {"measures": [...]}
       },
       "structure": ["Verse", "Chorus", "Verse", "Chorus Alt", "Chorus Outro"]
     }
     ```
-    **Generated**: Verse 1 → Chorus 1 → Verse 2 → Chorus Alt 1 → Chorus Outro 1
 
     ### Part-Specific Changes
-    Parts can override global settings:
+    Override global settings per part:
     ```json
     {
       "tempo": 120,
       "key": "G major",
       "parts": {
         "Bridge": {
-          "tempo_change": 100,
+          "tempo_change": 90,
           "key_change": "E minor",
           "measures": [...]
         }
@@ -196,125 +243,55 @@ def generate_tab(tab_data: str) -> TabResponse:
     }
     ```
 
-    ### Common Part Names
-    Standard song section names (case-sensitive):
-    - **Intro** - Song introduction
-    - **Verse** - Main verse sections
-    - **Chorus** - Repeating chorus/refrain
-    - **Bridge** - Contrasting bridge section
-    - **Solo** - Instrumental solo section
-    - **Outro** - Song ending
-    - **Pre-Chorus** - Lead-in to chorus
-    - **Interlude** - Instrumental break
-    - **Coda** - Final section
+    ## Event Types
 
-    ### Strum Patterns
-    Create strum direction indicators below the tablature:
-    ```json
-    {
-    "title": "Strum Pattern",
-    "shouldFail": False,
-    "timeSignature": "4/4",
-    "parts": {
-        "Main": {
-            "measures": [
-                {
-                    "strumPattern": ["D", "", "D", "U", "", "U", "D", "U"],
-                    "events": [
-                        {"type": "chord", "beat": 1.0, "chordName": "G", "frets": [
-                            {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                        ]}
-                    ]
-                }
-            ]
-        }
-    }
-    ```
-    **Output:** Shows "D   D U   U D U" below the tab content
+    ### Basic Events
+    - **note**: `{"type": "note", "string": 1, "beat": 1.0, "fret": 3, "emphasis": "f"}`
+    - **chord**: `{"type": "chord", "beat": 1.0, "chordName": "G", "frets": [...]}`
 
-    STRUM PATTERN GUIDELINES FOR LLM USAGE:
+    ### Playing Techniques
+    - **hammerOn**: `{"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 5, "vibrato": true}`
+    - **pullOff**: `{"type": "pullOff", "string": 1, "startBeat": 1.0, "fromFret": 5, "toFret": 3, "emphasis": "p"}`
+    - **slide**: `{"type": "slide", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up"}`
+    - **bend**: `{"type": "bend", "string": 1, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true}`
 
-    Per-Measure Strum Patterns (RECOMMENDED APPROACH):
-    - Use "strumPattern" field at measure level, not as events
-    - Each measure gets exactly 8 positions for 4/4 time: ["D","","U","","D","U","D","U"]
-    - Position mapping: [1, &, 2, &, 3, &, 4, &]
-    - Valid values: "D" (down), "U" (up), "" (no strum/silence)
+    ### Ornamental Elements
+    - **graceNote**: `{"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "graceType": "acciaccatura"}`
+    - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "heavy"}`
+    - **chuck**: `{"type": "chuck", "beat": 1.0, "intensity": "medium"}`
 
-    Common LLM Mistakes to Avoid:
-    - Don't use "X" in strum patterns - use chuck events + empty strum position
-    - Map musical patterns to beat grid: "D D DU" = ["D","","D","","D","U","",""]
-    - "DU" always means down on one beat, up on the next (&) beat
-    - Empty positions ("") are required for proper spacing
-
-    Example Correct Usage:
-    {
-    "title": "Strum Pattern",
-    "shouldFail": False,
-    "timeSignature": "4/4",
-    "parts": {
-        "Main": {
-            "measures": [
-                {
-                    "strumPattern": ["", "", "D", "", "D", "", "D", "U"],  // Chuck on 1, strums on 2,3,4&
-                    "events": [
-                        {"type": "chuck", "beat": 1.0},
-                        {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                            {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                        ]}
-                    ]
-                }
-            ]
-        }
-    }
-
-    CHORD PLACEMENT AND STRUM PATTERN ALIGNMENT:
-
-    Musical Theory Rules (CRITICAL):
-    - Assume D (down strums) occur on numbered beats: 1, 2, 3, 4 unless the chord pattern clearly states otherwise (such as all down strums for all beats)
-    - For 4/4 - 16th time, also known as 16th notes, The down strums are usually on the numbered beat markers,
-      such as 1, and 2, and on the 'ands' &.  Up strums are usually on the e and a markers.
-    Assume U (up strums) occur on & beats: 1&, 2&, 3&, 4&, unless otherwise specified
-    - Chords are often placed on downbeats (numbered beats) unless specifically noted
-    - Never place chords on & beats without explicit instruction
-
-    - If the measure has multiple chords you may need to ask to understand where to place the chords in the measure. Two chords often (but not always) split a measure evenly.
-
-    Common LLM Errors to Avoid:
-    - Always verify chord placement matches the intended strum positions
-
-    Verification Steps:
-    1. Check that chord placement beats match the intended strum positions
+    ## Musical Expression
 
     ### Dynamics and Emphasis
-    Add musical dynamics to any note or chord:
+    Available markings: `pp`, `p`, `mp`, `mf`, `f`, `ff`, `cresc.`, `dim.`, `<`, `>`, `-`, `.`
+
     ```json
     {
-      "type": "note",
-      "string": 1,
+      "type": "chord",
       "beat": 1.0,
-      "fret": 3,
-      "emphasis": "f"
+      "chordName": "G",
+      "emphasis": "f",
+      "frets": [...]
     }
     ```
-    **Dynamics:** pp, p, mp, mf, f, ff, cresc., dim., <, >
-    **Articulations:** >, -, ., staccato markings
 
     ### Grace Notes
-    Note that the grace note must always be followed by a target note!
-    Add ornamental grace notes with clean superscript notation:
+    Ornamental notes with Unicode superscript notation:
     ```json
-          {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "graceType": "acciaccatura"},
-          {"type": "note", "string": 1, "beat": 1.0, "fret": 5},
+    {
+      "type": "graceNote",
+      "string": 1,
+      "beat": 1.0,
+      "fret": 5,
+      "graceFret": 3,
+      "graceType": "acciaccatura"
+    }
     ```
-    Output:
+    - **Acciaccatura**: ³5 (quick grace note)
+    - **Appoggiatura**: ₃5 (grace note that takes time)
 
-    Acciaccatura: ³5 (quick grace note)
-    Appoggiatura: ₃5 (grace note that takes time)
-
-    Benefits: Cleaner, more compact, musical notation using Unicode superscripts.
-
-    ###  Annotations
-    Improved palm mutes and chucks with intensity:
+    ### Performance Techniques
+    Palm muting and chucks with intensity levels:
     ```json
     {
       "type": "palmMute",
@@ -323,21 +300,38 @@ def generate_tab(tab_data: str) -> TabResponse:
       "intensity": "heavy"
     }
     ```
-    **Output:** Shows "PM(H)----" with intensity indicator
+    Output: Shows "PM(H)----" with intensity indicator
 
-    ## Core Features ()
+    ## Strum Patterns
 
-    ### Basic Events
-    - **note**: `{"type": "note", "string": 1-6, "beat": 1.0-4.5, "fret": 0-24, "emphasis": "f"}`
-    - **chord**: `{"type": "chord", "beat": 1.0-4.5, "chordName": "G", "frets": [...], "emphasis": ">"}`
+    ### Measure-Level Strum Patterns
+    Specify strum patterns per measure:
+    ```json
+    {
+      "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
+      "events": [...]
+    }
+    ```
 
-    ### Guitar Techniques (All support emphasis and vibrato)
-    - **hammerOn**: `{"type": "hammerOn", "string": 1-6, "startBeat": 1.0, "fromFret": 3, "toFret": 5, "vibrato": true, "emphasis": "mf"}`
-    - **pullOff**: `{"type": "pullOff", "string": 1-6, "startBeat": 1.0, "fromFret": 5, "toFret": 3, "emphasis": "p"}`
-    - **slide**: `{"type": "slide", "string": 1-6, "startBeat": 1.0, "fromFret": 3, "toFret": 7, "direction": "up", "vibrato": true}`
-    - **bend**: `{"type": "bend", "string": 1-6, "beat": 1.0, "fret": 7, "semitones": 1.5, "vibrato": true, "emphasis": "ff"}`
+    ### Time Signature Support
+    - **4/4**: 8 positions `["D","","U","","D","U","D","U"]`
+    - **3/4**: 6 positions `["D","","U","","D","U"]`
+    - **2/4**: 4 positions `["D","","U",""]`
+    - **6/8**: 6 positions `["D","","","U","",""]`
 
-    ### Advanced Bend Notation ()
+    ### Strum Pattern Guidelines
+    - Use "strumPattern" field at measure level, not as events
+    - Valid values: "D" (down), "U" (up), "" (no strum/silence)
+    - Pattern length must match time signature requirements
+    - Empty positions ("") are required for proper spacing
+
+    ### Common Strum Patterns
+    - All down: `["D","","D","","D","","D",""]`
+    - Down-up basic: `["D","","D","U","D","","D","U"]`
+    - Chuck + strums: `["","","D","","D","","D","U"]` + chuck event
+
+    ## Bend Notation
+
     Precise semitone control with Unicode fractions:
     - `0.25` → "¼" (quarter step)
     - `0.5` → "½" (half step)
@@ -345,515 +339,237 @@ def generate_tab(tab_data: str) -> TabResponse:
     - `1.5` → "1½" (step and a half)
     - `2.0` → "2" (whole tone)
 
-    ###  Annotations
-    - **palmMute**: `{"type": "palmMute", "beat": 1.0, "duration": 2.0, "intensity": "light|medium|heavy"}`
-    - **chuck**: `{"type": "chuck", "beat": 2.0, "intensity": "heavy"}` → Shows "XH"
+    ## String Techniques
 
-    ### String Muting ()
-    - **Muted strings**: Use `"fret": "x"` for dead/muted strings in notes and chords
-    - **Emphasis on muted**: `{"type": "note", "string": 1, "beat": 1.0, "fret": "x", "emphasis": ">"}`
-
-    ## Time Signature Support ()
-
-    ### Supported Time Signatures
-    - **4/4**: 8 strum positions per measure `["D","","U","","D","U","D","U"]`
-    - **3/4**: 6 strum positions per measure `["D","","U","","D","U"]`
-    - **2/4**: 4 strum positions per measure `["D","","U",""]`
-    - **6/8**: 6 strum positions per measure `["D","","","U","",""]` (compound time)
-
-    ### Strum Pattern Validation
-    - Pattern length must match time signature requirements
-    - Patterns can span multiple measures evenly
-    - Valid directions: "D" (down), "U" (up), "" (no strum)
-
-    ##  JSON Structure
-
+    ### Muted Strings
+    Use `"fret": "x"` for dead/muted strings:
     ```json
     {
-      "title": "Complete Song Example",
-      "artist": "Demo Artist",
-      "timeSignature": "4/4",
-      "tempo": 120,
-      "key": "G major",
-      "parts": {
-        "Intro": {
-          "description": "Fingerpicked introduction",
-          "measures": [
-            {
-              "events": [
-                {"type": "strumPattern", "pattern": ["", "", "", "", "", "", "", ""]},
-                {"type": "note", "string": 1, "beat": 1.0, "fret": 3, "emphasis": "p"},
-                {"type": "note", "string": 2, "beat": 1.5, "fret": 0},
-                {"type": "note", "string": 3, "beat": 2.0, "fret": 0},
-                {"type": "note", "string": 1, "beat": 3.0, "fret": 3}
-              ]
-            }
-          ]
-        },
-        "Verse": {
-          "description": "Main verse with chord progression",
-          "measures": [
-            {
-              "events": [
-                {"type": "strumPattern", "pattern": ["D", "", "U", "", "D", "U", "D", "U"]},
-                {"type": "chord", "beat": 1.0, "chordName": "G", "emphasis": "mf", "frets": [
-                  {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                ]}
-              ]
-            },
-            {
-              "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
-                  {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 2, "fret": 1}
-                ]}
-              ]
-            },
-            {
-              "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "Em", "frets": [
-                  {"string": 5, "fret": 2}, {"string": 4, "fret": 2}
-                ]}
-              ]
-            },
-            {
-              "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "D", "frets": [
-                  {"string": 4, "fret": 0}, {"string": 3, "fret": 2}, {"string": 2, "fret": 3}, {"string": 1, "fret": 2}
-                ]}
-              ]
-            }
-          ]
-        },
-        "Chorus": {
-          "description": "Energetic chorus with palm muting",
-          "measures": [
-            {
-              "events": [
-                {"type": "strumPattern", "pattern": ["D", "", "", "D", "", "U", "D", "U"]},
-                {"type": "chord", "beat": 1.0, "chordName": "G", "emphasis": "f", "frets": [
-                  {"string": 6, "fret": 3}, {"string": 5, "fret": 2}, {"string": 1, "fret": 3}
-                ]},
-                {"type": "palmMute", "beat": 2.5, "duration": 1.0, "intensity": "medium"}
-              ]
-            },
-            {
-              "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "C", "emphasis": "f", "frets": [
-                  {"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 2, "fret": 1}
-                ]},
-                {"type": "chuck", "beat": 3.0, "intensity": "heavy"}
-              ]
-            }
-          ]
-        },
-        "Bridge": {
-          "description": "Slower bridge section",
-          "tempo_change": 90,
-          "measures": [
-            {
-              "events": [
-                {"type": "strumPattern", "pattern": ["D", "", "", "", "D", "", "", ""]},
-                {"type": "chord", "beat": 1.0, "chordName": "Am", "emphasis": "mp", "frets": [
-                  {"string": 5, "fret": 0}, {"string": 4, "fret": 2}, {"string": 3, "fret": 2}, {"string": 2, "fret": 1}
-                ]},
-                {"type": "bend", "string": 1, "beat": 3.0, "fret": 5, "semitones": 0.5, "vibrato": true, "emphasis": "mf"}
-              ]
-            }
-          ]
-        }
-      },
-      "structure": ["Intro", "Verse", "Chorus", "Verse", "Chorus", "Bridge", "Chorus", "Chorus"]
+      "type": "chord",
+      "beat": 1.0,
+      "chordName": "D5",
+      "frets": [
+        {"string": 6, "fret": "x"},
+        {"string": 5, "fret": "x"},
+        {"string": 4, "fret": 0},
+        {"string": 3, "fret": 2}
+      ]
     }
     ```
 
-
-    ## Error Handling & Validation
-
-     validation for parts system:
-    - **Part references**: All structure references must exist in parts
-    - **Part uniqueness**: Part names must be unique
-    - **Musical consistency**: Validates tempo/key/time signature changes
-    - **Structure validation**: Ensures structure array is not empty
-
-    ##  Error Messages
-
-    The system provides detailed error messages for:
-    - **Invalid strum patterns**: Length mismatches, invalid directions
-    - **Emphasis validation**: Invalid dynamic markings, incompatible combinations
-    - **Grace note conflicts**: Missing target notes, timing issues
-    - **Advanced technique validation**: Complex bend/vibrato/emphasis combinations
-
-    ## Musical Examples
-
-    ### Rock Power Chord with Strum Pattern
+    ### Custom Tunings
+    Support for alternate tunings with validation:
     ```json
     {
-      "title": "Power Chord Rock",
-      "timeSignature": "4/4",
-      "parts": {
-        "Main": {
-          "measures": [
-            {
-              "events": [
-                {"type": "strumPattern", "pattern": ["D","","","D","","U","D","U"]},
-                {"type": "chord", "beat": 1.0, "chordName": "E5", "emphasis": "f", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
-                {"type": "chord", "beat": 2.5, "chordName": "E5", "emphasis": ">", "frets": [{"string": 6, "fret": 0}, {"string": 5, "fret": 2}]},
-                {"type": "palmMute", "beat": 3.0, "duration": 1.0, "intensity": "heavy"}
-              ]
-            }
-          ]
-        }
-        },
-        "structure": ["Main"]
+      "instrument": "guitar",
+      "tuning": ["D", "A", "D", "G", "B", "E"],
+      "tuning_name": "Drop D",
+      "parts": {...}
     }
     ```
 
-    ### Classical Grace Note Passage
-    ```json
-    {
-      "title": "Classical Ornaments",
-      "timeSignature": "3/4",
-      "parts": {
-        "Main": {
-          "measures": [
-            {
-              "events": [
-                {"type": "graceNote", "string": 1, "beat": 1.0, "fret": 5, "graceFret": 3, "emphasis": "p"},
-                {"type": "note", "string": 1, "beat": 2.0, "fret": 7, "emphasis": "cresc."},
-                {"type": "bend", "string": 1, "beat": 3.0, "fret": 9, "semitones": 0.5, "vibrato": true, "emphasis": "f"}
-              ]
-            }
-          ]
-        }
-        },
-        "structure": ["Main"]
-    }
-    ```
+    ## Output Format
 
-    ### Jazz Chord Progression with Dynamics
-    ```json
-    {
-      "title": "Jazz Changes",
-      "timeSignature": "4/4",
-      "parts": {
-        "Main": {
-          "measures": [
-            {
-              "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "Cmaj7", "emphasis": "mp", "frets": [{"string": 5, "fret": 3}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 0}]},
-                {"type": "chord", "beat": 3.0, "chordName": "Am7", "emphasis": "mf", "frets": [{"string": 5, "fret": 0}, {"string": 4, "fret": 2}, {"string": 3, "fret": 0}, {"string": 2, "fret": 1}]}
-              ]
-            }
-          ]
-        }
-        },
-        "structure": ["Main"]
-    }
-    ```
+    Generated tabs include multiple display layers:
+    1. **Chord names** (when present)
+    2. **Dynamics** (when present)
+    3. **Annotations** (PM, X, emphasis markings)
+    4. **Beat markers**
+    5. **Tab content** (string lines)
+    6. **Strum patterns** (when present)
 
-    ### Generated Output Format
     ```
     # Song Title
     **Time Signature:** 4/4 | **Tempo:** 120 BPM | **Key:** G major
 
     **Song Structure:**
-    Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2 → Bridge 1 → Chorus 3
-
-    **Parts Defined:**
-    - **Intro**: 2 measures
-    - **Verse**: 4 measures - Main verse melody
-    - **Chorus**: 2 measures
-    - **Bridge**: 2 measures
-
-    ## Intro 1
-    [tab content for intro]
+    Intro 1 → Verse 1 → Chorus 1 → Verse 2 → Chorus 2
 
     ## Verse 1
-    [tab content for verse]
+    *Main verse section*
 
-    ## Chorus 1
-    [tab content for chorus]
-
-    ## Verse 2
-    [identical tab content for verse]
-
-    ## Chorus 2
-    [identical tab content for chorus]
-
-    ## Bridge 1
-    **Tempo:** 100 BPM | **Key:** E minor
-    [tab content for bridge]
-
-    ## Chorus 3
-    [identical tab content for chorus]
+     G                 Em
+     mf
+      1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
+    E |-3---------------|-0---------------|
+    B |-0---------------|-0---------------|
+    G |-0---------------|-0---------------|
+    D |-0---------------|-2---------------|
+    A |-2---------------|-2---------------|
+    E |-3---------------|-0---------------|
+      D   D U   U D U   D   D U   U D U
     ```
 
+    ## Error Handling
 
-    ## Strum Patterns (Measure Level)
-
-    Specify strum patterns per measure for maximum flexibility:
-
+    Provides structured error messages for validation issues:
     ```json
     {
+      "isError": true,
+      "errorType": "validation_error",
+      "measure": 1,
+      "beat": 4.7,
+      "message": "Beat 4.7 invalid for 4/4 time signature",
+      "suggestion": "Use valid beat values: 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5"
+    }
+    ```
+
+    ### Common Validation Errors
+    - **Invalid beats**: Beat values that don't match time signature
+    - **Technique direction**: Hammer-ons must go up, pull-offs must go down
+    - **String ranges**: Must match instrument (Guitar: 1-6, Ukulele: 1-4, etc.)
+    - **Part references**: Structure must reference defined parts
+    - **Strum pattern length**: Must match time signature requirements
+
+    ## Musical Theory Guidelines
+
+    ### Chord Placement and Timing
+    - Single chord measures: Place chord on beat 1.0
+    - Split chord measures: Place first chord on beat 1.0, second on beat 3.0
+    - Down strums typically occur on numbered beats: 1, 2, 3, 4
+    - Up strums typically occur on & beats: 1&, 2&, 3&, 4&
+    - Chuck events: Always use beat 1.0 with empty strum position
+
+    ### Performance Instructions
+    Use description fields for playing guidance:
+    ```json
+    {
+      "title": "Song Title",
+      "description": "Overall style guidance",
+      "parts": {
+        "Intro": {
+          "description": "Fingerpick arpeggios",
+          "measures": [...]
+        },
+        "Verse": {
+          "description": "Strum loosely, palm mute on downbeats",
+          "measures": [...]
+        }
+      }
+    }
+    ```
+
+    Common performance instructions:
+    - Chord techniques: "Let chords ring", "Strum arpeggios", "Fingerpick chord notes"
+    - Timing: "Syncopated rhythm", "Chord pushed from previous measure"
+    - Touch: "Palm mute throughout", "Light strum", "Aggressive picking"
+    - Style: "Country fingerpicking", "Classical technique", "Blues shuffle feel"
+
+    ## Usage Examples
+
+    ### Basic Chord Progression
+    ```json
+    {
+      "title": "Basic Chord Test",
       "timeSignature": "4/4",
       "parts": {
         "Main": {
           "measures": [
             {
-              "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
-              "events": [{"type": "chord", ...}]
-            },
-            {
-              "strumPattern": ["D", "", "", "D", "", "U", "D", "U"],
-              "events": [{"type": "chord", ...}]
-            },
-            {
-              "events": [{"type": "chord", ...}]  // No strum pattern
+              "strumPattern": ["D", "", "D", "", "D", "U", "D", "U"],
+              "events": [
+                {
+                  "type": "chord",
+                  "beat": 1.0,
+                  "chordName": "G",
+                  "frets": [
+                    {"string": 6, "fret": 3},
+                    {"string": 5, "fret": 2},
+                    {"string": 1, "fret": 3}
+                  ]
+                }
+              ]
             }
           ]
         }
-        },
-        "structure": ["Main"]
+      },
+      "structure": ["Main"]
     }
+    ```
 
-    ## Time Signature Support
-
-    All time signatures support parts system:
-    - **4/4**: 8 strum positions per measure
-    - **3/4**: 6 strum positions per measure
-    - **2/4**: 4 strum positions per measure
-    - **6/8**: 6 strum positions per measure (compound time)
-
-    Strum Pattern Length Requirements:
-
-    4/4 time: 8 positions ["D","","U","","D","U","D","U"]
-    3/4 time: 6 positions ["D","","U","","D","U"]
-    2/4 time: 4 positions ["D","","U",""]
-    6/8 time: 6 positions ["D","","","U","",""]
-
-    Valid Values:
-
-    "D" = Down strum
-    "U" = Up strum
-    "" = No strum (silence)
-
-    Notes:
-
-    Strum patterns are optional per measure
-    Each measure can have different patterns
-    Length must exactly match time signature
-
-    ### Performance Instructions and Comments
-
-    Use description fields to provide playing instructions and style guidance:
-
+    ### Playing Techniques Example
     ```json
     {
-      "title": "Song Title",
-      "description": "Overall style guidance (e.g., 'Let chords ring throughout')",
-      "parts": {
-        "Intro": {
-          "description": "Specific technique for this part (e.g., 'Fingerpick arpeggios')",
-          "measures": [...]
-        },
-        "Verse": {
-          "description": "Style changes (e.g., 'Strum loosely, palm mute on downbeats')",
-          "measures": [...]
-        }
-      }
-    }
-    Common Performance Instructions:
-
-    Chord techniques: "Let chords ring", "Strum arpeggios", "Fingerpick chord notes"
-    Timing: "Chord pushed from previous measure", "Syncopated rhythm"
-    Touch: "Palm mute throughout", "Light strum", "Aggressive picking"
-    Style: "Country fingerpicking", "Classical technique", "Blues shuffle feel"
-    Arpeggio: "Inital chords in each verse measure are played as a quick arpeggio"
-
-    Note that if the Arpeggio is quite slow, the chord can be broken into individual notes and added to the tab
-
-
-    ### Lyrics Support
-
-    Lyrics can be manually added below tabs. Since lyrics timing rarely matches measure boundaries, manual formatting provides the best results.
-
-    **Basic Format:**
-    Add lyrics after the tab content using natural spacing and line breaks.
-
-    **Guidelines for LLMs:**
-    - Add lyrics AFTER generating the complete tab
-    - Use manual spacing - don't force alignment with measures
-    - Break lyrics naturally across multiple lines if needed
-    - Use part descriptions for vocal techniques ("harmony", "falsetto")
-    - Show verse/chorus structure clearly
-
-    **Example Output:**
-    Song Title
-    [complete tab here]
-    Verse 1: "First line of lyrics here
-    Second line continues here"
-    Chorus: "Chorus lyrics with natural breaks
-    Don't worry about measure alignment"
-
-    **Chord-Lyric Timing:**
-    Only attempt alignment when chords clearly match lyric syllables. Most songs work better with separate lyric sections below the tab.
-
-    **Multiple Verses:**
-    Verse 1
-    [tab content]
-    Verse 1 lyrics...
-    Chorus 1
-    [tab content]
-    Chorus lyrics...
-    Verse 2
-    [tab content]
-    Verse 2 lyrics (different words, same chords)...
-
-
-    ## Ukulele Support
-
-    The tab generator now supports both guitar and ukulele with automatic string count and validation.
-
-    ### Basic Usage
-    ```json
-    {
-      "title": "Ukulele Song",
-      "instrument": "ukulele",
+      "title": "Technique Showcase",
       "timeSignature": "4/4",
       "parts": {
         "Main": {
           "measures": [
             {
               "events": [
-                {"type": "chord", "beat": 1.0, "chordName": "C", "frets": [
-                  {"string": 4, "fret": 0},
-                  {"string": 3, "fret": 0},
-                  {"string": 2, "fret": 0},
-                  {"string": 1, "fret": 3}
-                ]}
+                {
+                  "type": "hammerOn",
+                  "string": 1,
+                  "startBeat": 1.0,
+                  "fromFret": 3,
+                  "toFret": 5,
+                  "vibrato": true
+                },
+                {
+                  "type": "bend",
+                  "string": 2,
+                  "beat": 2.0,
+                  "fret": 7,
+                  "semitones": 1.5,
+                  "emphasis": "f"
+                },
+                {
+                  "type": "slide",
+                  "string": 3,
+                  "startBeat": 3.0,
+                  "fromFret": 5,
+                  "toFret": 8,
+                  "direction": "up"
+                }
               ]
             }
           ]
         }
-        },
-        "structure": ["Main"]
+      },
+      "structure": ["Main"]
     }
-    Instrument Field
+    ```
 
-    "guitar" (default) - 6 strings, standard tuning
-    "ukulele" - 4 strings, high G tuning (G-C-E-A)
-
-    Ukulele String Numbering
-
-    String 1: A (highest pitch)
-    String 2: E
-    String 3: C
-    String 4: G (lowest pitch)
-
-    Common Ukulele Chords
-    json// C major - easiest ukulele chord
+    ### Multi-Instrument Song
+    ```json
     {
-      "type": "chord",
-      "chordName": "C",
-      "frets": [
-        {"string": 4, "fret": 0},
-        {"string": 3, "fret": 0},
-        {"string": 2, "fret": 0},
-        {"string": 1, "fret": 3}
-      ]
+      "title": "Ukulele Song",
+      "instrument": "ukulele",
+      "timeSignature": "3/4",
+      "parts": {
+        "Main": {
+          "measures": [
+            {
+              "strumPattern": ["D", "", "D", "", "D", "U"],
+              "events": [
+                {
+                  "type": "chord",
+                  "beat": 1.0,
+                  "chordName": "C",
+                  "frets": [
+                    {"string": 4, "fret": 0},
+                    {"string": 3, "fret": 0},
+                    {"string": 2, "fret": 0},
+                    {"string": 1, "fret": 3}
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "structure": ["Main"]
     }
+    ```
 
-    // G major
-    {
-      "type": "chord",
-      "chordName": "G",
-      "frets": [
-        {"string": 4, "fret": 3},
-        {"string": 3, "fret": 2},
-        {"string": 2, "fret": 0},
-        {"string": 1, "fret": 2}
-      ]
-    }
+    ## Important Notes
 
-    // A minor
-    {
-      "type": "chord",
-      "chordName": "Am",
-      "frets": [
-        {"string": 4, "fret": 2},
-        {"string": 3, "fret": 0},
-        {"string": 2, "fret": 0},
-        {"string": 1, "fret": 0}
-      ]
-    }
-
-    // F major
-    {
-      "type": "chord",
-      "chordName": "F",
-      "frets": [
-        {"string": 4, "fret": 2},
-        {"string": 3, "fret": 0},
-        {"string": 2, "fret": 1},
-        {"string": 1, "fret": 0}
-      ]
-    }
-    Ukulele Techniques
-    All guitar techniques work on ukulele:
-    json// Hammer-on
-    {"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 0, "toFret": 2}
-
-    // Slide
-    {"type": "slide", "string": 2, "startBeat": 2.0, "fromFret": 2, "toFret": 4, "direction": "up"}
-
-    // Bend (less common on ukulele)
-    {"type": "bend", "string": 1, "beat": 3.0, "fret": 3, "semitones": 0.5}
-    Ukulele Strum Patterns
-    Standard strum patterns work perfectly:
-    json{
-      "strumPattern": ["D", "", "U", "", "D", "U", "D", "U"],
-      "events": [...]
-    }
-    Validation
-
-    String range: 1-4 for ukulele (vs 1-6 for guitar)
-    Fret range: 0-24 (same as guitar)
-    Automatic validation: Invalid strings will be caught and reported
-
-    Example Output
-    # Ukulele Song
-    **Time Signature:** 4/4
-
-       C       G         Am      F
-       1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
-    A|-3-------2-------|-0-------0-------|
-    E|-0-------0-------|-0-------1-------|
-    C|-0-------2-------|-0-------0-------|
-    G|-0-------3-------|-2-------2-------|
-       D   U   D U D U   D   U   D U D U
-    Performance Notes for Ukulele
-    Use description fields for ukulele-specific techniques:
-
-    "description": "Light fingerpicking, let strings ring"
-    "description": "Hawaiian-style slack key feel"
-    "description": "Percussive chuck on off-beats"
-
-    CHORD PLACEMENT TIMING:
-    - Single chord measures: Place chord on beat 1.0
-    - Split chord measures (like "Em D/F#"): Place first chord on beat 1.0, second on beat 3.0
-    - Chuck events: Always use beat 1.0 with empty strum position at that location
-
-    COMMON PATTERNS:
-    - All down strums: ["D","","D","","D","","D",""]
-    - Down-up basic: ["D","","D","U","D","","D","U"]
-    - Chuck + strums: ["","","D","","D","","D","U"] + chuck event on beat 1.0
-
-    LLM Result Interpretation:
-    - Raw content string is authoritative - don't assume display errors
-    - Check warnings array for validation issues
-    - No warnings + success=true = output is correct
-
-
+    - Display the generated tab content exactly as returned without modification
+    - Use fixed-width/monospace font for proper alignment
+    - Tab content requires precise character positioning for musical accuracy
+    - The tool handles complex musical notation automatically
+    - Multiple display layers provide comprehensive musical information
+    - Warnings indicate potential formatting issues but don't prevent generation
     """
     logger.info(f"Received tab generation request")
     logger.debug(f"Request data type: {type(tab_data)}")
