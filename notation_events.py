@@ -20,7 +20,8 @@ from tab_models import TabRequest
 from tab_constants import (
     DynamicLevel, DisplayLayer,
     VALID_EMPHASIS_VALUES, MAX_FRET, MAX_STRING, MIN_STRING,
-    MAX_SEMITONES, MIN_SEMITONES
+    MAX_SEMITONES, MIN_SEMITONES, SUPERSCRIPT_SYMBOLS, SUBSCRIPT_SYMBOLS,
+    DEFAULT_SYMBOLS
 )
 
 # Configure logging to stderr only (stdout reserved for MCP protocol)
@@ -49,7 +50,69 @@ class NotationEvent(BaseModel):
     emphasis: Optional[str] = Field(None, description="Dynamic or articulation marking")
     _registry: ClassVar[Dict[str, Type]] = {}
 
+    # Helpers for generating notation
+    _technique_toggle : ClassVar[int] = 0
+    _display_style = "regular"
+    
+    @classmethod
+    def set_technique_style(cls, style: str):
+        """Set the default technique formatting style for all events."""
+        valid_styles = ["regular", "superscript", "subscript", "alternating"]
+        if style in valid_styles:
+            cls._display_style = style
+        else:
+            raise ValueError(f"Invalid style '{style}'. Valid: {valid_styles}")
+    
+    def get_alternating_style(self) -> str:
+        """Get the current style for alternating mode."""
+        self.__class__._technique_toggle += 1
+        return "superscript" if self.__class__._technique_toggle % 2 == 0 else "subscript"
+    
+    def map_str(self, text: str, char_map: Dict) -> str:
+        """Convert entire string (digits and technique symbols) to superscript."""
+        result = ""
+        for char in text:
+            result += char_map.get(char, char)
 
+        return result
+    
+    def format_technique(self, technique_type: str, part1: str, 
+                        part2: str, style: Optional[str] = None
+                        ) -> str:
+        """
+        Format a musical technique with specified style.
+        
+        Args:
+            technique_type: Type of technique ("h", "p", "b", "/", "\\")
+            part1: First part (from_fret for hammer-on, fret for bend, etc.)
+            part2: Second part (to_fret for hammer-on, semitones for bend, etc.)
+            style: Formatting style ("superscript", "subscript", "alternating", "regular")
+            
+        Returns:
+            Formatted technique string
+            
+        Examples:
+            format_technique("h", 3, 5, "superscript") -> "³ʰ⁵"
+            format_technique("p", 7, 5, "subscript") -> "₇ₚ₅"  
+            format_technique("b", 12, 1.5, "alternating") -> varies based on count
+        """
+        if style is None:
+            style = self.__class__._display_style
+        
+        style_selector = style
+        if style_selector == "alternating":
+            # Set the style to either sub or super script
+            style_selector = self.get_alternating_style()
+        
+        # Choose proper mapping method for chars
+        char_map: Dict = DEFAULT_SYMBOLS
+        if style_selector == "superscript":
+            char_map = SUPERSCRIPT_SYMBOLS
+        elif style_selector == "subscript":
+            char_map = SUBSCRIPT_SYMBOLS
+
+        return (self.map_str(f"{part1}{technique_type}{part2}", char_map))
+    
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "NotationEvent":
         """
@@ -88,6 +151,7 @@ class MusicalEvent(NotationEvent):
     """Base class for events that occur at specific beats."""
     beat: Optional[float] = None
     startBeat: Optional[float] = None  # For techniques that span time
+
     
     @field_validator('beat', 'startBeat')
     @classmethod
@@ -137,7 +201,7 @@ class Chord(MusicalEvent, type="chord"):
     chordName: Optional[str] = None
     frets: List[Dict[str, Union[int, str]]]  # [{"string": 1, "fret": 3}, ...]
     layer: DisplayLayer = DisplayLayer.CHORD_NAMES
-
+    
     @field_validator('frets')
     @classmethod
     def validate_frets(cls, v):
@@ -177,7 +241,7 @@ class Slide(MusicalEvent, type="slide"):
         symbol = "/" if self.direction == "up" else "\\"
 
         # Compact format: "3/5" or "12\8"
-        notation = str(self.fromFret) + symbol + str(self.toFret)
+        notation = self.format_technique(symbol, str(self.fromFret), str(self.toFret))
 
         # Add vibrato notation if specified (applies to the destination note)
         if self.vibrato:
@@ -256,7 +320,7 @@ class Bend(MusicalEvent, type="bend"):
             semitone_str = str(int(self.semitones))
         # Fallback for unusual decimal values
 
-        technique_str = f"{fret_str}b{semitone_str}"
+        technique_str = self.format_technique("b", fret_str, semitone_str)
 
         # Add vibrato notation if specified
         if self.vibrato:
@@ -283,7 +347,7 @@ class HammerOn(MusicalEvent, type="hammerOn"):
     
     def generate_notation(self) -> str:
         # Compact format: "3h5" or "10p12"
-        notation = f"{self.fromFret}h{self.toFret}"
+        notation = self.format_technique("h", str(self.fromFret), str(self.toFret))
 
         # Add vibrato notation if specified (applies to the destination note)
         if self.vibrato:
@@ -309,7 +373,7 @@ class PullOff(MusicalEvent, type="pullOff"):
     
     def generate_notation(self) -> str:
         # Compact format: "3h5" or "10p12"
-        notation = f"{self.fromFret}p{self.toFret}"
+        notation = self.format_technique("p", str(self.fromFret), str(self.toFret))
 
         # Add vibrato notation if specified (applies to the destination note)
         if self.vibrato:

@@ -152,6 +152,10 @@ class TabRequest(BaseModel):
     showStrumPattern: bool = Field(default=True)
     showDynamics: bool = Field(default=True)
     showPartHeaders: bool = Field(default=True, description="Show part names as headers")
+    techniqueStyle: str = Field(
+        default="regular", 
+        description="Technique formatting style"
+    )
 
     # info that can be used to generate a valid schema for the JSON format used
     model_config = {
@@ -192,7 +196,15 @@ class TabRequest(BaseModel):
                     available_parts = list(parts_dict.keys())
                     raise ValueError(f"Structure references undefined part '{part_name}'. Available parts: {available_parts}")
         return v
-
+    
+    @field_validator('techniqueStyle')
+    @classmethod
+    def validate_technique_style(cls, v):
+        valid_styles = ["regular", "superscript", "subscript", "alternating"]
+        if v not in valid_styles:
+            raise ValueError(f"Invalid techniqueStyle. Valid: {valid_styles}")
+        return v
+    
 # ============================================================================
 # Parts Processing Functions
 # ============================================================================

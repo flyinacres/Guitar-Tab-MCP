@@ -179,6 +179,19 @@ MAX_EMPHASIS_LENGTH = 10  # Maximum characters for emphasis marking
 # Display Constants
 # ============================================================================
 
+SUPERSCRIPT_SYMBOLS = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", 
+                    "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+                    "h": "ʰ", "p": "ᵖ", "b": "ᵇ", "/": "⁄", "\\": "\\"}
+
+SUBSCRIPT_SYMBOLS = {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+                    "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+                    "h": "ₕ", "p": "ₚ", "b": "ᵦ", "/": "⁄", "\\": "\\"}
+
+DEFAULT_SYMBOLS = {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4",
+                    "5": "5", "6": "6", "7": "7", "8": "8", "9": "9",
+                    "h": "h", "p": "p", "b": "b", "/": "/", "\\": "\\"}
+
+
 class DisplayLayer(Enum):
     """Different layers of information displayed in tabs."""
     CHORD_NAMES = "chord_names"

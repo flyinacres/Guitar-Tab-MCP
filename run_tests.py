@@ -23,6 +23,7 @@ from typing import Dict, Any, Tuple, Optional
 from tab_models import TabRequest
 import logging
 import traceback
+from notation_events import NotationEvent
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
@@ -225,6 +226,9 @@ def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool 
     if verbose:
         logger.setLevel(logging.DEBUG)
     
+    # Ran a quick test to see if this scheme worked...
+    #NotationEvent.set_technique_style("alternating")
+
     # Run tests
     all_passed = True
     for test_name, test_data in test_suite.items():

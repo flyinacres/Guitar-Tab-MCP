@@ -519,6 +519,12 @@ def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]
     output_lines.extend(header_lines)
     output_lines.append("")
 
+    # Set technique formatting style for all events
+    NotationEvent.set_technique_style(request.techniqueStyle)
+    
+    # Reset count for new tab generation
+    NotationEvent._technique_count = 0
+
     # Process song structure
     try:
         instances = process_song_structure(request)

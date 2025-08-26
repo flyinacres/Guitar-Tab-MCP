@@ -64,38 +64,6 @@ mcp = FastMCP("Tab Generator")
 @mcp.tool()
 def generate_tab(tab_data: str) -> TabResponse:
     """
-Stringed Instrument Tab Generator - MCP Server Implementation
-===========================================================
-
-FastMCP server implementation for generating tablature for stringed instruments.
-Converts structured JSON specifications into properly aligned UTF-8 tablature
-with comprehensive musical notation support.
-
-Supported Instruments:
-- Guitar (6-string)
-- Ukulele (4-string) 
-- Bass (4-string)
-- Mandolin (4-string)
-- Banjo (5-string)
-- Seven-string guitar (7-string)
-
-Usage:
-    python mcp_server.py
-
-For Claude Desktop integration, add to configuration:
-{
-  "mcpServers": {
-    "stringed-instrument-tab-generator": {
-      "command": "python",
-      "args": ["/path/to/mcp_server.py"]
-    }
-  }
-}
-"""
-
-@mcp.tool()
-def generate_tab(tab_data: str) -> TabResponse:
-    """
     Generate UTF-8 tablature for stringed instruments from structured JSON input.
 
     Converts tab specifications into properly formatted UTF-8 tablature with
@@ -561,6 +529,39 @@ def generate_tab(tab_data: str) -> TabResponse:
       "structure": ["Main"]
     }
     ```
+
+    ## Technique Formatting
+
+    Control the visual style of musical techniques:
+
+    ```json
+    {
+      "title": "Compact Solo",
+      "techniqueStyle": "alternating",
+      "parts": {
+        "Solo": {
+          "measures": [
+            {
+              "events": [
+                {"type": "hammerOn", "string": 1, "startBeat": 1.0, "fromFret": 3, "toFret": 5},
+                {"type": "bend", "string": 2, "startBeat": 2.0, "fret": 7, "semitones": 1.5}
+              ]
+            }
+          ]
+        }
+      }
+    }
+    ```
+    
+    Available styles:
+
+    "regular": Standard notation (3h5, 7b1½)
+    "superscript": All superscript (³ʰ⁵, ⁷ᵇ¹½)
+    "subscript": All subscript (₃ₕ₅, ₇ᵦ₁½)
+    "alternating": Alternates to prevent collisions (³ʰ⁵, ₇ᵦ₁½)
+
+    Recommended: Use "alternating" for dense solo passages with many techniques.
+
 
     ## Important Notes
 
