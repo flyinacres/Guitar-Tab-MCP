@@ -64,18 +64,29 @@ class TabResponse(BaseModel):
 # Parts System Models
 # ============================================================================
 
+
+class Measure(BaseModel):
+    """Single measure containing events and optional strum pattern."""
+    events: List[Dict[str, Any]] = Field(default_factory=list)
+    strumPattern: Optional[List[str]] = None
+    
+    @field_validator('strumPattern')
+    @classmethod
+    def validate_strum_pattern_length(cls, v, info):
+        # Add time signature validation here
+        return v
+    
 class SongPart(BaseModel):
     """
-    A named section of a song containing measures.
-    
-    Examples: Verse, Chorus, Bridge, Intro, Outro, Solo, etc.
+    Represents the Part of the tab as seen on the input data.
     """
-    name: Optional[str] = Field(None, description="Optional display name override")
+    name: str = Field(..., description="Name of the part definition")
     description: Optional[str] = Field(None, description="Description of this part")
-    measures: List[Dict[str, Any]] = Field(..., description="Measures with optional strumPattern field")
-    tempo_change: Optional[int] = Field(None, description="Tempo change for this part")
-    key_change: Optional[str] = Field(None, description="Key change for this part")
-    time_signature_change: Optional[str] = Field(None, description="Time signature change for this part")
+    #description: str
+    measures: List[Measure] = Field(..., description="The actual measures for this instance")
+    tempo_change: Optional[int] = Field(None, description="Effective tempo for this part")
+    key_change: Optional[str] = Field(None, description="Effective key for this part")
+    time_signature_change: Optional[str] = Field(None, description="Effective time signature for this part")
     
     @field_validator('measures')
     @classmethod
@@ -90,20 +101,16 @@ class SongPart(BaseModel):
         if v is not None and (v < 40 or v > 300):
             raise ValueError("Tempo must be between 40 and 300 BPM")
         return v
-
-class PartInstance(BaseModel):
+    
+class PartInstance(SongPart):
     """
     Represents a specific occurrence of a part in the song structure.
     
     This is generated internally when processing the structure.
     """
-    part_name: str = Field(..., description="Name of the part definition")
     instance_number: int = Field(..., description="Which occurrence of this part (1, 2, 3...)")
     display_name: str = Field(..., description="Display name with numbering")
-    measures: List[Dict[str, Any]] = Field(..., description="The actual measures for this instance")
-    tempo: Optional[int] = Field(None, description="Effective tempo for this part")
-    key: Optional[str] = Field(None, description="Effective key for this part")
-    time_signature: Optional[str] = Field(None, description="Effective time signature for this part")
+
 
 class SongStructure(BaseModel):
     """
@@ -120,6 +127,7 @@ class SongStructure(BaseModel):
         if not v:
             raise ValueError("Song structure must contain at least one part")
         return v
+
     
 # ============================================================================
 # Tab Request Model
@@ -144,7 +152,8 @@ class TabRequest(BaseModel):
     showBeatMarkers: bool = Field(default=True, description="Show beat counting (1 & 2 & 3 & 4 &)")
     
     # New parts format
-    parts: Optional[Dict[str, SongPart]] = Field(None, description="Named song parts/sections")
+    parts: List[SongPart] = Field(..., description="Named song parts/sections")
+    #parts: Optional[Dict[str, SongPart]] = Field(None, description="Named song parts/sections")
     structure: Optional[List[str]] = Field(None, description="Order of parts in the song")
     
     # Display options
@@ -156,6 +165,26 @@ class TabRequest(BaseModel):
         default="regular", 
         description="Technique formatting style"
     )
+
+    # Arguably parts should already be a list, but it isn't.  Until I
+    # go through and change all examples, this will convert it automatically.
+    @field_validator("parts", mode="before")
+    def convert_dict_to_list(cls, v):
+        if isinstance(v, dict):
+            return [
+                SongPart(
+                    name=name,
+                    instance_number=i + 1,
+                    description=part.get("description"),
+                    display_name=f"{name} {i+1}",
+                    measures=part.get("measures", []),
+                    tempo_change=part.get("tempo_change"),
+                    key_change=part.get("key_change"),
+                    time_signature_change=part.get("time_signature_change"),
+                )
+                for i, (name, part) in enumerate(v.items())
+            ]
+        return v
 
     # info that can be used to generate a valid schema for the JSON format used
     model_config = {
@@ -185,17 +214,6 @@ class TabRequest(BaseModel):
             supported = [inst.value for inst in Instrument]
             raise ValueError(f"Invalid instrument '{v}'. Supported: {supported}")
 
-    @field_validator('structure')
-    @classmethod 
-    def validate_structure_references(cls, v, info):
-        """Validate that all structure references exist in parts."""
-        if v is not None and 'parts' in info.data and info.data['parts'] is not None:
-            parts_dict = info.data['parts']
-            for part_name in v:
-                if part_name not in parts_dict:
-                    available_parts = list(parts_dict.keys())
-                    raise ValueError(f"Structure references undefined part '{part_name}'. Available parts: {available_parts}")
-        return v
     
     @field_validator('techniqueStyle')
     @classmethod
@@ -243,7 +261,7 @@ def process_song_structure(request: TabRequest) -> List[PartInstance]:
     current_time_signature = request.timeSignature
     
     for part_name in request.structure:
-        if part_name not in request.parts:
+        if all(part.name != part_name for part in request.parts):
             raise ValueError(f"Structure references undefined part: {part_name}")
         
         # Increment counter for this part name
@@ -251,13 +269,13 @@ def process_song_structure(request: TabRequest) -> List[PartInstance]:
         instance_number = part_counters[part_name]
         
         # Get part definition
-        part_def = request.parts[part_name]
+        part_def = next((part for part in request.parts if part.name == part_name), None)
         
         # Apply any part-specific changes
         part_tempo = part_def.tempo_change or current_tempo
         part_key = part_def.key_change or current_key
         part_time_sig = part_def.time_signature_change or current_time_signature
-        
+
         # Update current state for next parts
         if part_def.tempo_change:
             current_tempo = part_def.tempo_change
@@ -273,13 +291,13 @@ def process_song_structure(request: TabRequest) -> List[PartInstance]:
         
         # Create part instance
         instance = PartInstance(
-            part_name=part_name,
+            name=part_name,
             instance_number=instance_number,
             display_name=display_name,
             measures=part_def.measures.copy(),  # Deep copy to avoid mutations
-            tempo=part_tempo,
-            key=part_key,
-            time_signature=part_time_sig
+            tempo_change=part_tempo,
+            key_change=part_key,
+            time_signature_change=part_time_sig
         )
         
         instances.append(instance)
@@ -363,7 +381,7 @@ def analyze_song_structure(request: TabRequest) -> Dict[str, Any]:
     total_measures = 0
     
     for instance in instances:
-        part_name = instance.part_name
+        part_name = instance.name
         part_occurrences[part_name] = part_occurrences.get(part_name, 0) + 1
         total_measures += len(instance.measures)
     

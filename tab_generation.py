@@ -25,7 +25,7 @@ from tab_constants import (
     get_instrument_config
 )
 from tab_models import (
-    TabRequest, PartInstance, process_song_structure
+    TabRequest, SongPart, Measure, process_song_structure
 )
 
 from notation_events import (
@@ -58,14 +58,14 @@ logger = logging.getLogger(__name__)
 
 
 
-def generate_strum_line(measures: List[Dict[str, Any]],
+def generate_strum_line(measures: Measure,
                         num_measures: int, time_signature: str) -> str:
     """Generate strum line from measure strumPattern fields."""
     total_width = calculate_total_width(time_signature, num_measures)
     strum_chars = [' '] * total_width
 
     for measure_idx, measure in enumerate(measures):
-        strum_pattern = measure.get("strumPattern")
+        strum_pattern = measure.strumPattern
         if not strum_pattern:
             continue
 
@@ -82,7 +82,7 @@ def generate_strum_line(measures: List[Dict[str, Any]],
 
 
 def generate_measure_group(
-    measures: List[Dict[str, Any]],
+    measures: Measure,
     start_index: int,
     time_signature: str,
     measure_info: Dict[str, Any]
@@ -99,7 +99,7 @@ def generate_measure_group(
     - Strum patterns (when present)
 
     Args:
-        measures: List of measure dictionaries
+        measures: List of Measures
         start_index: Starting measure number for warnings
         time_signature: Time signature string
         measure_info: Data needed for measure info
@@ -174,7 +174,7 @@ def generate_measure_group(
     return result, warnings
 
 def generate_all_display_layers(
-    measures: List[Dict[str, Any]],
+    measures: Measure,
     num_measures: int,
     time_signature: str
 ) -> Dict[DisplayLayer, str]:
@@ -212,7 +212,7 @@ def generate_all_display_layers(
     return result
 
 def process_measure_for_display_layers(
-    measure: Dict[str, Any],
+    measure: Measure,
     measure_idx: int,
     time_signature: str,
     layers: Dict[DisplayLayer, List[str]],
@@ -221,7 +221,7 @@ def process_measure_for_display_layers(
     """
     Process a single measure and populate all display layers.
     """
-    for event in measure.get("events", []):
+    for event in measure.events:
         event_class = NotationEvent.from_dict(event)
         beat = getattr(event_class, 'beat', None) or getattr(event_class, 'startBeat', None)
 
@@ -262,7 +262,7 @@ def process_measure_for_display_layers(
 
 
 def place_measure_events(
-    measure: Dict[str, Any],
+    measure: Measure,
     string_lines: List[str],
     measure_offset: int,
     measure_number: int,
@@ -287,7 +287,7 @@ def place_measure_events(
 
     logger.debug(f"Placing events for measure {measure_number} (offset {measure_offset})")
 
-    for event in measure.get("events", []):
+    for event in measure.events:
         event_class = NotationEvent.from_dict(event)
 
         if isinstance(event_class, (PalmMute, Chuck, StrumPattern, Dynamic)):
@@ -559,7 +559,7 @@ def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]
 
         # Generate measures for this part
         part_measures = instance.measures
-        part_time_sig = instance.time_signature or request.timeSignature
+        part_time_sig = instance.time_signature_change or request.timeSignature
 
         # Process measures in groups of 4
         for measure_group_start in range(0, len(part_measures), 4):
@@ -635,17 +635,17 @@ def generate_header(request: TabRequest) -> List[str]:
         # Show part definitions
         lines.append("")
         lines.append("**Parts Defined:**")
-        for part_name, part_def in request.parts.items():
-            measure_count = len(part_def.measures)
-            part_info = f"- **{part_name}**: {measure_count} measure{'s' if measure_count != 1 else ''}"
-            if part_def.description:
-                part_info += f" - {part_def.description}"
+        for part in request.parts:
+            measure_count = len(part.measures)
+            part_info = f"- **{part.name}**: {measure_count} measure{'s' if measure_count != 1 else ''}"
+            if part.description:
+                part_info += f" - {part.description}"
             lines.append(part_info)
 
     return lines
 
 
-def generate_part_header(instance: PartInstance, request: TabRequest) -> List[str]:
+def generate_part_header(instance: SongPart, request: TabRequest) -> List[str]:
     """Generate header for individual song parts."""
     lines = []
 
@@ -653,19 +653,19 @@ def generate_part_header(instance: PartInstance, request: TabRequest) -> List[st
     lines.append(f"## {instance.display_name}")
 
     # Part-specific information
-    part_def = request.parts[instance.part_name]
+    part_def = next((part for part in request.parts if part.name == instance.name), None)
 
     if part_def.description:
         lines.append(f"*{part_def.description}*")
 
     # Musical changes for this part
     changes = []
-    if instance.tempo != request.tempo:
-        changes.append(f"**Tempo:** {instance.tempo} BPM")
-    if instance.key != request.key:
-        changes.append(f"**Key:** {instance.key}")
-    if instance.time_signature != request.timeSignature:
-        changes.append(f"**Time Signature:** {instance.time_signature}")
+    if instance.tempo_change != None and instance.tempo_change != request.tempo:
+        changes.append(f"**Tempo:** {instance.tempo_change} BPM")
+    if instance.key_change != None and instance.key_change != request.key:
+        changes.append(f"**Key:** {instance.key_change}")
+    if instance.time_signature_change != None and instance.time_signature_change != request.timeSignature:
+        changes.append(f"**Time Signature:** {instance.time_signature_change}")
 
     if changes:
         lines.append(" | ".join(changes))

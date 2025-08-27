@@ -473,17 +473,17 @@ class StrumPattern(NotationEvent, type="strumPattern"):
 
         logger.debug(f"Validating strum patterns for {time_sig} (expecting {expected_positions} positions per measure)")
 
-        for part_name, part_def in request.parts.items():
+        for part in request.parts:
             active_patterns = []  # Track overlapping patterns within this part
 
-            logger.debug("Validating strum patterns in part '%s'", part_name)
+            logger.debug("Validating strum patterns in part '%s'", part.name)
 
-            for measure_idx, measure in enumerate(part_def.measures):
-                for event in measure.get("events", []):
+            for measure_idx, measure in enumerate(part.measures):
+                for event in measure.events:
                     if event.get("type") != "strumPattern":
                         continue
 
-                    logger.debug(f"Found strum pattern in part '{part_name}' measure {measure_idx}")
+                    logger.debug(f"Found strum pattern in part '{part.name}' measure {measure_idx}")
 
                     pattern = event.get("pattern", [])
                     measures_spanned = event.get("measures", 1)
@@ -492,26 +492,26 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                     # Validate pattern length
                     expected_length = expected_positions * measures_spanned
                     if len(pattern) != expected_length:
-                        logger.error(f"Strum pattern length mismatch in part '{part_name}': got {len(pattern)}, expected {expected_length}")
+                        logger.error(f"Strum pattern length mismatch in part '{part.name}': got {len(pattern)}, expected {expected_length}")
                         return {
                             "isError": True,
                             "errorType": "validation_error",
-                            "part": part_name,
+                            "part": part.name,
                             "measure": measure_idx,
-                            "message": f"Strum pattern in part '{part_name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
+                            "message": f"Strum pattern in part '{part.name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
                             "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
                         }
 
                     # Validate pattern values
                     for i, direction in enumerate(pattern):
                         if direction not in ["D", "U", ""]:
-                            logger.error(f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'")
+                            logger.error(f"Invalid strum direction '{direction}' at position {i} in part '{part.name}'")
                             return {
                                 "isError": True,
                                 "errorType": "validation_error",
-                                "part": part_name,
+                                "part": part.name,
                                 "measure": measure_idx,
-                                "message": f"Invalid strum direction '{direction}' at position {i} in part '{part_name}'",
+                                "message": f"Invalid strum direction '{direction}' at position {i} in part '{part.name}'",
                                 "suggestion": "Use 'D' for down, 'U' for up, or '' for no strum"
                             }
 
@@ -525,18 +525,18 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                     for existing_pattern in active_patterns:
                         if (pattern_info["start_measure"] <= existing_pattern["end_measure"] and
                             pattern_info["end_measure"] >= existing_pattern["start_measure"]):
-                            logger.error(f"Overlapping strum patterns detected in part '{part_name}'")
+                            logger.error(f"Overlapping strum patterns detected in part '{part.name}'")
                             return {
                                 "isError": True,
                                 "errorType": "conflict_error",
-                                "part": part_name,
+                                "part": part.name,
                                 "measure": measure_idx,
-                                "message": f"Overlapping strum patterns detected in part '{part_name}'",
+                                "message": f"Overlapping strum patterns detected in part '{part.name}'",
                                 "suggestion": "Only one strum pattern can be active at a time within a part"
                             }
 
                     active_patterns.append(pattern_info)
-                    logger.debug(f"Strum pattern validated in part '{part_name}': {measures_spanned} measures, {len(pattern)} positions")
+                    logger.debug(f"Strum pattern validated in part '{part.name}': {measures_spanned} measures, {len(pattern)} positions")
 
         logger.debug("Strum pattern validation passed")
         return {"isError": False}
