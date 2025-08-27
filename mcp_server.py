@@ -40,7 +40,10 @@ from validation import (
      validate_tab_data
 )
 
-from tab_models import TabResponse, TabRequest, analyze_song_structure, create_schema
+from tab_models import (
+  TabResponse, TabRequest, JSONError, ProcessingError, 
+  analyze_song_structure, create_schema
+)
 
 from tab_constants import (
     StrumDirection, DynamicLevel
@@ -552,7 +555,7 @@ def generate_tab(tab_data: str) -> TabResponse:
       }
     }
     ```
-    
+
     Available styles:
 
     "regular": Standard notation (3h5, 7b1½)
@@ -598,44 +601,34 @@ def generate_tab(tab_data: str) -> TabResponse:
         #  validation pipeline
         logger.debug("Starting  validation pipeline")
         validation_result = validate_tab_data(request)
-        if validation_result["isError"]:
-            logger.warning(f" validation failed: {validation_result['message']}")
+        if validation_result:
+            logger.warning(f" validation failed: {validation_result.message}")
             return TabResponse(success=False, error=validation_result)
 
         logger.info("Validation passed successfully")
 
         # Generate  tab with all new features
         logger.debug("Starting  tab generation")
-        tab_output, warnings = generate_tab_output(request)
-
-        return TabResponse(
-            success=True,
-            content=tab_output,
-            warnings=warnings
-        )
+        return generate_tab_output(request)
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}")
         return TabResponse(
-            success=False,
-            error={
-                "isError": True,
-                "errorType": "json_error",
-                "message": f"Invalid JSON format: {str(e)}",
-                "suggestion": "Check JSON syntax - ensure proper quotes, brackets, and commas"
-            }
+            success = False,
+            error = JSONError(
+                message = f"Invalid JSON format: {str(e)}",
+                suggestion = "Check JSON syntax - ensure proper quotes, brackets, and commas"
+            )
         )
 
     except Exception as e:
         logger.error(f"Unexpected error during tab generation: {e}")
         return TabResponse(
-            success=False,
-            error={
-                "isError": True,
-                "errorType": "processing_error",
-                "message": f"Unexpected error during tab generation: {str(e)}",
-                "suggestion": "Check input format and try again. For complex tabs, consider simplifying or breaking into sections."
-            }
+            success = False,
+            error = ProcessingError(
+                message = f"Unexpected error during tab generation: {str(e)}",
+                suggestion = "Check input format and try again. For complex tabs, consider simplifying or breaking into sections."
+            )
         )
 
 

@@ -2,7 +2,7 @@
   "invalid_ukulele_string": {
     "title": "Invalid Ukulele String Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: Invalid string number: 5",
+    "expectedError": "Invalid string number: 5",
     "instrument": "ukulele",
     "timeSignature": "4/4",
     "parts": {

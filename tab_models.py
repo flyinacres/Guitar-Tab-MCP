@@ -32,6 +32,52 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Errors defined here to avoid circular imports...
+# Only extensions of this class can be directly used...
+class TabError(BaseModel):
+    message: str
+    suggestion: str
+    part: Optional[str] = None
+    measure: Optional[int] = None
+    beat: Optional[float] = None
+
+    # force subclasses to define this
+    errorType: str = Field(..., description="Must be overridden by subclasses")
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "success": True,
+                "content": "# Song Title\n...",
+                "warnings": [
+                    {
+                        "warningType": "formatting_warning",
+                        "measure": 1,
+                        "beat": 2.0,
+                        "message": "Complex strum pattern may require practice"
+                    }
+                ]
+            }
+        }
+    }
+
+    
+class TabFormatError(TabError):
+    errorType: Literal["validation_error"] = "validation_error"
+
+    
+class ProcessingError(TabError):
+    errorType: Literal["processing_error"] = "processing_error"
+    
+class ConflictError(TabError):
+    errorType: Literal["conflict_error"] = "conflict_error" 
+
+    
+class JSONError(TabError):
+    errorType: Literal["JSONError"] = "JSONError" 
+
+
+
 # ============================================================================
 # Response Models
 # ============================================================================
@@ -40,7 +86,7 @@ class TabResponse(BaseModel):
     """ response with additional formatting information."""
     success: bool
     content: str = ""
-    error: Optional[Dict[str, Any]] = None
+    error: Optional[TabError] = None
     warnings: List[Dict[str, Any]] = []
     
     model_config = {
@@ -140,6 +186,8 @@ class TabRequest(BaseModel):
     """
     title: str
     description: str = ""
+    shouldFail: bool = False
+    expectedError: str = ""
     artist: Optional[str] = None
     instrument: str = "guitar" 
     timeSignature: str = "4/4"

@@ -328,7 +328,7 @@
   "invalid_beat_error": {
     "title": "Invalid Beat Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: Beat 4.7 invalid for 4/4 time signature in part 'Main'",
+    "expectedError": "Beat 4.7 invalid for 4/4 time signature in part 'Main'",
     "timeSignature": "4/4",
     "parts": {
       "Main": {
@@ -1582,7 +1582,7 @@
   "invalid_ukulele_string": {
     "title": "Invalid Ukulele String Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: Invalid string number: 5",
+    "expectedError": "Invalid string number: 5",
     "instrument": "ukulele",
     "timeSignature": "4/4",
     "parts": {
@@ -2275,7 +2275,7 @@
   "invalid_tuning_wrong_string_count": {
     "title": "Invalid Tuning Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: guitar requires 6 strings, got 3",
+    "expectedError": "guitar requires 6 strings, got 3",
     "instrument": "guitar",
     "timeSignature": "4/4",
     "tuning": ["E", "A", "D"],

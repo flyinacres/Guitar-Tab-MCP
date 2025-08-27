@@ -18,9 +18,9 @@ Key Enhancements:
 import sys
 import logging
 from typing import Dict, Any, Optional, Literal
-from pydantic import ValidationError, BaseModel
+from pydantic import ValidationError, BaseModel,Field
 
-from tab_models import TabRequest, Measure
+from tab_models import TabRequest, Measure, TabError, TabFormatError, ConflictError
 
 from tab_constants import (
     VALID_EMPHASIS_VALUES,
@@ -51,28 +51,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ValidationError(BaseModel):
-    isError: bool = True
-    errorType: Literal["validation_error", "conflict_error", "processing_error", "json_error"]
-    message: str
-    suggestion: str
-    part: Optional[str] = None
-    measure: Optional[int] = None
-    beat: Optional[float] = None
-    
-class ProcessingError(ValidationError):
-    errorType: Literal["processing_error"] = "processing_error"
-    
-class ConflictError(ValidationError):
-    errorType: Literal["conflict_error"] = "conflict_error" 
-
-
 # ============================================================================
 #  Validation Pipeline
 # ============================================================================
 
 
-def validate_schema(request: TabRequest) -> Dict[str, Any]:
+def validate_schema(request: TabRequest) -> TabError:
     """
     Validate required fields and structure for parts-based schema.
 
@@ -86,75 +70,62 @@ def validate_schema(request: TabRequest) -> Dict[str, Any]:
 
     for field in required_fields:
         if not hasattr(request, field):
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "message": f"Missing required field: {field}",
-                "suggestion": f"Add '{field}' property to root object"
-            }
+            return TabFormatError(
+                message = f"Missing required field: {field}",
+                suggestion = f"Add '{field}' property to root object"
+            )
 
     # Validate parts is a dict
     if not hasattr(request, "parts") or len(request.parts) == 0:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "message": "Parts must be a non-empty object/dictionary",
-            "suggestion":
+        return TabFormatError(
+            message = "Parts must be a non-empty object/dictionary",
+            suggestion =
             "Provide at least one part definition like: \"parts\": {\"Verse\": {\"measures\": [...]}}"
-        }
+        )
 
     # Validate structure is an array
     if not hasattr(request, "structure") or len(request.structure)== 0:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "message": "Structure must be a non-empty array",
-            "suggestion": "Provide structure array like: \"structure\": [\"Verse\", \"Chorus\"]"
-        }
+        return TabFormatError(
+            message = "Structure must be a non-empty array",
+            suggestion = "Provide structure array like: \"structure\": [\"Verse\", \"Chorus\"]"
+        )
 
     # Validate each part has measures array
     for part in request.parts:
         if not hasattr(part, "measures"):
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "message": f"Part '{part.name}' missing measures array",
-                "suggestion": "Each part must have a 'measures' array: {\"measures\": [...]}"
-            }
+            return TabFormatError(
+                message = f"Part '{part.name}' missing measures array",
+                suggestion = "Each part must have a 'measures' array: {\"measures\": [...]}"
+            )
 
         if len(part.measures) == 0:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "message": f"Part '{part.name}' has empty or invalid measures array",
-                "suggestion": "Each part must have at least one measure with events"
-            }
+            return TabFormatError(
+                message = f"Part '{part.name}' has empty or invalid measures array",
+                suggestion = "Each part must have at least one measure with events"
+            )
 
         # Validate each measure has events array
         for measure_idx, measure in enumerate(part.measures, 1):
             if not isinstance(measure, Measure) or not measure.events:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "message": f"Part '{part.name}' measure {measure_idx} missing events array",
-                    "suggestion": "Each measure must have an 'events' array (can be empty)"
-                }
+                return TabFormatError(
+                    message = f"Part '{part.name}' measure {measure_idx} missing events array",
+                    suggestion = "Each measure must have an 'events' array (can be empty)"
+                )
 
     # Validate structure references existing parts
     for part_name in request.structure:
         if all(part.name != part_name for part in request.parts):
             available_parts = [part.name for part in request.parts]
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "message": f"Structure references undefined part '{part_name}'",
-                "suggestion":
+            return TabFormatError(
+                message = f"Structure references undefined part '{part_name}'",
+                suggestion =
                 f"Available parts: {available_parts}. Check spelling or add part definition."
-            }
+            )
 
-    return {"isError": False}
+    return None
 
-def validate_timing(request: TabRequest) -> Dict[str, Any]:
+
+def validate_timing(request: TabRequest) -> TabError:
     """
     Enhanced timing validation for parts-based schema.
 
@@ -188,15 +159,13 @@ def validate_timing(request: TabRequest) -> Dict[str, Any]:
 
                 if beat is None:
                     logger.warning("Event %s in part '%s' measure %s missing beat timing",
-                                   event_idx, part.name, measure_idx)
-                    return {
-                        "isError": True,
-                        "errorType": "validation_error",
-                        "part": part.name,
-                        "measure": measure_idx,
-                        "message": f"Event {event_idx} in part '{part.name}' missing beat timing",
-                        "suggestion": "Add 'beat' or 'startBeat' field to event"
-                    }
+                        event_idx, part.name, measure_idx)
+                    return TabFormatError(
+                        part = part.name,
+                        measure = measure_idx,
+                        message = f"Event {event_idx} in part '{part.name}' missing beat timing",
+                        suggestion = "Add 'beat' or 'startBeat' field to event"
+                    )
 
                 match event_class:
                     # Enhanced beat validation for different event types
@@ -204,7 +173,7 @@ def validate_timing(request: TabRequest) -> Dict[str, Any]:
                         # Grace notes have special timing requirements
                         grace_result = GraceNote.validate_grace_note_timing(beat, time_sig,
                                                                 part.name, measure_idx)
-                        if grace_result["isError"]:
+                        if grace_result:
                             return grace_result
                     case StrumPattern():
                         # Strum patterns have their own validation (handled separately)
@@ -215,21 +184,19 @@ def validate_timing(request: TabRequest) -> Dict[str, Any]:
                         if not is_beat_valid(beat, time_sig):
                             logger.warning("Invalid beat %s for %s in part '%s' measure %s",
                                         beat, time_sig, part.name, measure_idx)
-                            return {
-                                "isError": True,
-                                "errorType": "validation_error",
-                                "part": part.name,
-                                "measure": measure_idx,
-                                "beat": beat,
-                                "message": f"Beat {beat} invalid for {time_sig} time signature in part '{part.name}'",
-                                "suggestion": f"Use valid beat values for {time_sig}: {', '.join(map(str, get_valid_beats(time_sig)))}"
-                            }
+                            return TabFormatError(
+                                part = part.name,
+                                measure = measure_idx,
+                                beat = beat,
+                                message = f"Beat {beat} invalid for {time_sig} time signature in part '{part.name}'",
+                                suggestion = f"Use valid beat values for {time_sig}: {', '.join(map(str, get_valid_beats(time_sig)))}"
+                            )
 
     logger.debug("Enhanced timing validation passed")
-    return {"isError": False}
+    return None
 
 
-def validate_conflicts(request: TabRequest) -> Dict[str, Any]:
+def validate_conflicts(request: TabRequest) -> TabError:
     """
     Enhanced conflict detection for parts-based schema.
 
@@ -275,42 +242,36 @@ def validate_conflicts(request: TabRequest) -> Dict[str, Any]:
                     case Chord():
                         beat = getattr(event_class, 'beat', None) 
                         if not beat:
-                            return {
-                                "isError": True,
-                                "errorType": "validation_error",
-                                "part": part.name,
-                                "measure": measure_idx,
-                                "message": f"Chord event in part '{part.name}' missing 'beat' field",
-                                "suggestion": "Add 'beat' field to chord event"
-                            }
+                            return TabFormatError(
+                                part = part.name,
+                                measure = measure_idx,
+                                message = f"Chord event in part '{part.name}' missing 'beat' field",
+                                suggestion = "Add 'beat' field to chord event"
+                            )
 
                         # Validate chord has frets array
                         frets = getattr(event_class, 'frets', None) 
                         if not frets:
-                            return {
-                                "isError": True,
-                                "errorType": "validation_error",
-                                "part": part.name,
-                                "measure": measure_idx,
-                                "beat": beat,
-                                "message": f"Chord event in part '{part.name}' missing 'frets' array",
-                                "suggestion": "Add 'frets' array with string/fret objects"
-                            }
+                            return TabFormatError(
+                                part = part.name,
+                                measure = measure_idx,
+                                beat = beat,
+                                message = f"Chord event in part '{part.name}' missing 'frets' array",
+                                suggestion = "Add 'frets' array with string/fret objects"
+                            )
 
                         # Check for duplicate strings within the chord
                         chord_strings = set()
                         for fret_info in frets:
                             string_num = fret_info.get("string")
                             if string_num in chord_strings:
-                                return {
-                                    "isError": True,
-                                    "errorType": "conflict_error",
-                                    "part": part.name,
-                                    "measure": measure_idx,
-                                    "beat": beat,
-                                    "message": f"Chord in part '{part.name}' has duplicate entries for string {string_num}",
-                                    "suggestion": "Each string can only appear once per chord"
-                                }
+                                return ConflictError(
+                                    part = part.name,
+                                    measure = measure_idx,
+                                    beat = beat,
+                                    message = f"Chord in part '{part.name}' has duplicate entries for string {string_num}",
+                                    suggestion = "Each string can only appear once per chord"
+                                )
                             chord_strings.add(string_num)
 
                         continue  # Skip position conflict checking for chords
@@ -326,33 +287,31 @@ def validate_conflicts(request: TabRequest) -> Dict[str, Any]:
 
                 if position_key in events_by_position:
                     logger.warning(f"Conflict detected: multiple events on string {string_num} at beat {beat} in part '{part.name}'")
-                    return {
-                        "isError": True,
-                        "errorType": "conflict_error",
-                        "part": part.name,
-                        "measure": measure_idx,
-                        "beat": beat,
-                        "message": f"Multiple events on string {string_num} at beat {beat} in part '{part.name}'",
-                        "suggestion": "Move one event to different beat or different string"
-                    }
+                    return ConflictError(
+                        part = part.name,
+                        measure = measure_idx,
+                        beat = beat,
+                        message = f"Multiple events on string {string_num} at beat {beat} in part '{part.name}'",
+                        suggestion = "Move one event to different beat or different string"
+                    )
 
                 events_by_position[position_key] = event_class
 
                 # Validate technique-specific rules (enhanced)
                 technique_error = validate_technique_rules(event_class, part.name, measure_idx, beat, instrument.strings)
-                if technique_error["isError"]:
+                if technique_error:
                     return technique_error
 
             # Validate grace note conflicts
             grace_conflict = GraceNote.validate_grace_note_conflicts(grace_notes, events_by_position, part.name, measure_idx)
-            if grace_conflict["isError"]:
+            if grace_conflict:
                 return grace_conflict
 
     logger.debug("Enhanced conflict validation passed")
-    return {"isError": False}
+    return None
 
 
-def validate_emphasis_markings(request: TabRequest) -> Dict[str, Any]:
+def validate_emphasis_markings(request: TabRequest) -> TabError:
     """
     Validate emphasis markings on all musical events in parts-based schema.
 
@@ -376,20 +335,18 @@ def validate_emphasis_markings(request: TabRequest) -> Dict[str, Any]:
 
                     if not is_valid_emphasis(emphasis):
                         logger.error(f"Invalid emphasis value in part '{part.name}': {emphasis}")
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part.name,
-                            "measure": measure_idx,
-                            "message": f"Invalid emphasis value '{emphasis}' in part '{part.name}'",
-                            "suggestion": f"Use valid emphasis: {', '.join(VALID_EMPHASIS_VALUES[:10])}..."
-                        }
+                        return  TabFormatError(
+                            part = part.name,
+                            measure = measure_idx,
+                            message = f"Invalid emphasis value '{emphasis}' in part '{part.name}'",
+                            suggestion = f"Use valid emphasis: {', '.join(VALID_EMPHASIS_VALUES[:10])}..."
+                        )
 
     logger.debug("Emphasis validation passed")
-    return {"isError": False}
+    return None
 
 
-def validate_technique_rules(event_class: NotationEvent, part_name: str, measure_idx: int, beat: float, strings: int) -> Dict[str, Any]:
+def validate_technique_rules(event_class: NotationEvent, part_name: str, measure_idx: int, beat: float, strings: int) -> TabError:
     """
     Validate technique-specific rules that ensure playability and proper notation.
 
@@ -418,15 +375,13 @@ def validate_technique_rules(event_class: NotationEvent, part_name: str, measure
     # Validate string range for all events with string field
     string_num = event_class.string
     if string_num is not None and (string_num < 1 or string_num > strings):
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "part": part_name,
-            "measure": measure_idx,
-            "beat": beat,
-            "message": f"Invalid string number: {string_num}",
-            "suggestion": "String numbers must be 1-6 (1=high e, 6=low E)"
-        }
+        return  TabFormatError(
+            part = part_name,
+            measure = measure_idx,
+            beat = beat,
+            message = f"Invalid string number: {string_num}",
+            suggestion = "String numbers must be 1-6 (1=high e, 6=low E)"
+        )
 
     # Validate fret ranges (now supports "x" for muted strings)
     for fret_field in ["fret", "fromFret", "toFret"]:
@@ -436,25 +391,21 @@ def validate_technique_rules(event_class: NotationEvent, part_name: str, measure
             if isinstance(fret, str) and fret.lower() == "x":
                 continue  # Valid muted string
             elif isinstance(fret, (int, float)) and (fret < 0 or fret > 24):
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "part": part_name,
-                    "measure": measure_idx,
-                    "beat": beat,
-                    "message": f"Invalid fret number: {fret}",
-                    "suggestion": "Fret numbers must be 0-24 or 'x' for muted strings"
-                }
+                return  TabFormatError(
+                    part = part_name,
+                    measure = measure_idx,
+                    beat = beat,
+                    message = f"Invalid fret number: {fret}",
+                    suggestion = "Fret numbers must be 0-24 or 'x' for muted strings"
+                )
             elif not isinstance(fret, (int, float, str)):
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "part": part_name,
-                    "measure": measure_idx,
-                    "beat": beat,
-                    "message": f"Invalid fret value: {fret}",
-                    "suggestion": "Fret must be a number (0-24) or 'x' for muted strings"
-                }
+                return  TabFormatError(
+                    part = part_name,
+                    measure = measure_idx,
+                    beat = beat,
+                    message = f"Invalid fret value: {fret}",
+                    suggestion = "Fret must be a number (0-24) or 'x' for muted strings"
+                )
 
     # Technique-specific validations
     match event_class:
@@ -462,43 +413,37 @@ def validate_technique_rules(event_class: NotationEvent, part_name: str, measure
             from_fret = event_class.fromFret
             to_fret = event_class.toFret
             if from_fret is not None and to_fret is not None and from_fret >= to_fret:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "part": part_name,
-                    "measure": measure_idx,
-                    "beat": beat,
-                    "message": f"Hammer-on fromFret ({from_fret}) must be lower than toFret ({to_fret})",
-                    "suggestion": "Hammer-ons go to higher frets - check fromFret and toFret values"
-                }
+                return  TabFormatError(
+                    part = part_name,
+                    measure = measure_idx,
+                    beat = beat,
+                    message = f"Hammer-on fromFret ({from_fret}) must be lower than toFret ({to_fret})",
+                    suggestion = "Hammer-ons go to higher frets - check fromFret and toFret values"
+                )
 
         case PullOff():
             from_fret = event_class.fromFret
             to_fret = event_class.toFret
             if from_fret is not None and to_fret is not None and from_fret <= to_fret:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "part": part_name,
-                    "measure": measure_idx,
-                    "beat": beat,
-                    "message": f"Pull-off fromFret ({from_fret}) must be higher than toFret ({to_fret})",
-                    "suggestion": "Pull-offs go to lower frets - check fromFret and toFret values"
-                }
+                return  TabFormatError(
+                    part = part_name,
+                    measure = measure_idx,
+                    beat = beat,
+                    message = f"Pull-off fromFret ({from_fret}) must be higher than toFret ({to_fret})",
+                    suggestion = "Pull-offs go to lower frets - check fromFret and toFret values"
+                )
         # Add bend-specific validation
         case Bend():
             semitones = event_class.semitones
             if semitones is not None:
                 if not isinstance(semitones, (int, float)) or semitones <= 0 or semitones > 3.0:
-                    return {
-                        "isError": True,
-                        "errorType": "validation_error",
-                        "part": part_name,
-                        "measure": measure_idx,
-                        "beat": beat,
-                        "message": f"Invalid semitones value: {semitones}",
-                        "suggestion": "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)"
-                    }
+                    return  TabFormatError(
+                        part = part_name,
+                        measure = measure_idx,
+                        beat = beat,
+                        message = f"Invalid semitones value: {semitones}",
+                        suggestion = "Semitone must be a number between 0.25 and 3.0 (¼=quarter step, ½=half step, 1=whole step, 1½=step and half)"
+                    )
 
     # Additional validation for emphasis on techniques
     emphasis = event_class.emphasis
@@ -511,10 +456,10 @@ def validate_technique_rules(event_class: NotationEvent, part_name: str, measure
             logger.warning("Soft dynamics on bends may not be effective")
             # This is a warning, not an error
 
-    return {"isError": False}
+    return None
 
 
-def validate_instrument_events(request: TabRequest) -> Dict[str, Any]:
+def validate_instrument_events(request: TabRequest) -> TabError:
     """
     Validate all events for the specified instrument.
 
@@ -526,12 +471,10 @@ def validate_instrument_events(request: TabRequest) -> Dict[str, Any]:
         config = get_instrument_config(instrument_str)
         logger.debug(f"Validating events for {config.name} ({config.strings} strings)")
     except ValueError as _:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "message": f"Invalid instrument: {instrument_str}",
-            "suggestion": "Use 'guitar' or 'ukulele'"
-        }
+        return  TabFormatError(
+            message = f"Invalid instrument: {instrument_str}",
+            suggestion = "Use 'guitar' or 'ukulele'"
+        )
 
     for part in request.parts:
         measures = part.measures
@@ -543,74 +486,70 @@ def validate_instrument_events(request: TabRequest) -> Dict[str, Any]:
                 string_num = getattr(event_class, "string", None)
                 if string_num is not None:
                     if not config.validate_string(string_num):
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "measure": measure_idx,
-                            "message": f"Invalid string {string_num} for {config.name}",
-                            "suggestion": f"Use strings 1-{config.strings} for {config.name}"
-                        }
+                        return  TabFormatError(
+                            measure = measure_idx,
+                            message = f"Invalid string {string_num} for {config.name}",
+                            suggestion = f"Use strings 1-{config.strings} for {config.name}"
+                        )
 
                 # Validate chord frets
                 if isinstance( event_class, Chord):
                     for fret_info in event_class.frets:
                         chord_string = fret_info.get("string")
                         if chord_string and not config.validate_string(chord_string):
-                            return {
-                                "isError": True,
-                                "errorType": "validation_error",
-                                "measure": measure_idx,
-                                "message": f"Invalid string {chord_string} in chord for {config.name}",
-                                "suggestion": f"Use strings 1-{config.strings} for {config.name}"
-                            }
+                            return  TabFormatError(
+                                measure = measure_idx,
+                                message = f"Invalid string {chord_string} in chord for {config.name}",
+                                suggestion = f"Use strings 1-{config.strings} for {config.name}"
+                            )
 
     logger.debug(f"All events validated for {config.name}")
-    return {"isError": False}
+    return None
 
-def validate_tab_data(request: TabRequest) -> Dict[str, Any]:
+def validate_tab_data(request: TabRequest) -> TabError:
     """validation pipeline."""
     logger.debug(f"Running validation for attempt {request.attempt}")
 
     # Stage 1: Schema validation
     schema_result = validate_schema(request)
-    if schema_result["isError"]:
+    if schema_result:
         return schema_result
 
     # Stage 2: Timing validation
     timing_result = validate_timing(request)
-    if timing_result["isError"]:
+    if timing_result:
         return timing_result
 
     # Stage 3: Conflict validation
     conflict_result = validate_conflicts(request)
-    if conflict_result["isError"]:
+    if conflict_result:
         return conflict_result
 
     # Stage 4: Strum pattern validation
     strum_result = StrumPattern.validate_strum_patterns(request)
-    if strum_result["isError"]:
+    if strum_result:
         return strum_result
 
     # Stage 5: Emphasis validation
     emphasis_result = validate_emphasis_markings(request)
-    if emphasis_result["isError"]:
+    if emphasis_result:
         return emphasis_result
 
     # Stage 6: Instrument validation
     instrument_result = validate_instrument_events(request)
-    if instrument_result["isError"]:
-        logger.warning(f"Instrument validation failed: {instrument_result['message']}")
+    if instrument_result:
+        logger.warning(f"Instrument validation failed: {instrument_result.message}")
         return instrument_result
 
     # Stage 7: Validate custom tuning
     tuning_result = validate_custom_tuning(request)
-    if tuning_result["isError"]:
+    if tuning_result:
         return tuning_result
     
     logger.info("All validation stages passed")
-    return {"isError": False}
+    return None
 
-def validate_custom_tuning(request: TabRequest) -> Dict[str, Any]:
+def validate_custom_tuning(request: TabRequest) -> TabError:
     instrument: str = request.instrument
 
     # Get instrument configuration for string count
@@ -622,13 +561,11 @@ def validate_custom_tuning(request: TabRequest) -> Dict[str, Any]:
         tuning = config.tuning
 
     if len(tuning) != num_strings:
-        return {
-            "isError": True,
-            "errorType": "validation_error",
-            "message": f"{instrument} requires {num_strings} strings, got {len(tuning)}",
-            "suggestion": f"Use a properly specified tuning for the instrument"
-        }
+        return TabFormatError(
+            message = f"{instrument} requires {num_strings} strings, got {len(tuning)}",
+            suggestion = f"Use a properly specified tuning for the instrument"
+        )
 
-    return {"isError": False}
+    return None
 
 logger.info(" core validation module loaded successfully")

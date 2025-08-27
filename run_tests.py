@@ -20,10 +20,22 @@ import json
 import difflib
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional
-from tab_models import TabRequest
+from tab_models import TabRequest, TabResponse, ProcessingError
 import logging
 import traceback
 from notation_events import NotationEvent
+
+from pydantic import ValidationError
+
+# Monkey patch the Pydantic errors to remove all the extra stuff
+def clean_str(self):
+    return "\n".join(
+        f"{' -> '.join(map(str, err['loc']))}: {err['msg']}"
+        for err in self.errors()
+    )
+
+# Apply globally to all ValidationError instances
+ValidationError.__str__ = clean_str
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
@@ -45,7 +57,7 @@ class TabTestFramework:
         
         self.test_results = []
     
-    def run_mcp_test(self, input_data: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
+    def run_mcp_test(self, request: TabRequest) -> TabResponse:
         """
         Run a single test through the MCP server.
         
@@ -56,22 +68,25 @@ class TabTestFramework:
             # Import and use the MCP functionality directly
             from validation import validate_tab_data
             from tab_generation import generate_tab_output
-            request = TabRequest(**input_data)
 
             # Validate input
             validation_result = validate_tab_data(request)
-            if validation_result["isError"]:
-                return False, "", f"Validation failed: {validation_result['message']}"
+            if validation_result:
+                return TabResponse(success=False, content = "", error = validation_result)
             
             # Generate tab
-            tab_output, warnings = generate_tab_output(request)
-            
-            return True, tab_output, None
+            return generate_tab_output(request)
+
             
         except Exception as e:
             # If there was an exception, probably want to know where!
             logging.error(traceback.format_exc())
-            return False, "", f"Generation failed: {str(e)}"
+            return TabResponse(success = False, content = "", 
+                        error = ProcessingError(
+                            message = f"Generation failed: {str(e)}",
+                            suggestion = ""
+                        )
+            )
 
     
     def compare_with_golden(self, test_name: str, actual_output: str) -> bool:
@@ -112,38 +127,39 @@ class TabTestFramework:
         print(''.join(diff))
         print("=== END DIFF ===\n")
     
-    def run_single_test(self, test_name: str, test_data: Dict[str, Any], update_golden: bool = False, show: bool = False) -> bool:
+    def run_single_test(self, test_name: str, request: TabRequest, update_golden: bool = False, show: bool = False) -> bool:
         """Run a single test case."""
         logger.info(f"Running test: {test_name}")
         
-        success, output, error = self.run_mcp_test(test_data)
-        
-        if show:
-            print(output)
+        #success, output, error = self.run_mcp_test(request)
+        response = self.run_mcp_test(request)
+
+        if show and response:
+            print(response.content)
 
         # Some tests are designed to fail
-        if test_data["shouldFail"]:
+        if request.shouldFail:
             # it was supposed to fail, but it did not!
-            logger.info(f"Error for failure case '{error}'")
-            if success:
+            logger.info(f"Error for failure case '{response.error.message}'")
+            if response.success:
                 logger.error(f"Test {test_name} was designed to fail, but passed")
                 self.test_results.append({"name": test_name, "status": "FAILED", "error": "Error condition passed"})
                 return False
-            elif test_data["expectedError"] != error:
+            elif not response.error or request.expectedError != response.error.message:
                 logger.error(f"Test {test_name} was expected to fail, but did so with the wrong error!")
                 self.test_results.append({"name": test_name, "status": "FAILED", "error": "Wrong error type"})
                 return False
-        elif not success:
-            logger.error(f"Test {test_name} failed: {error}")
-            self.test_results.append({"name": test_name, "status": "FAILED", "error": error})
+        elif not response.success:
+            logger.error(f"Test {test_name} failed: {response.error.message}")
+            self.test_results.append({"name": test_name, "status": "FAILED", "error": response.errore})
             return False
         
         if update_golden:
-            self.save_golden_output(test_name, output)
+            self.save_golden_output(test_name, response.content)
             self.test_results.append({"name": test_name, "status": "UPDATED"})
             return True
         
-        if self.compare_with_golden(test_name, output):
+        if self.compare_with_golden(test_name, response.content):
             logger.info(f"Test {test_name} passed")
             self.test_results.append({"name": test_name, "status": "PASSED"})
             return True
@@ -232,7 +248,8 @@ def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool 
     # Run tests
     all_passed = True
     for test_name, test_data in test_suite.items():
-        passed = framework.run_single_test(test_name, test_data, update_golden, show)
+        request = TabRequest(**test_data)
+        passed = framework.run_single_test(test_name, request, update_golden, show)
         if not passed:
             all_passed = False
     
@@ -291,8 +308,6 @@ def main():
             sys.exit(1)
 
         test_file = args.test_file
-        print(f"Main() Using test file '{test_file}'")
-
     
     if args.create_json:
         create_json_files(test_file)

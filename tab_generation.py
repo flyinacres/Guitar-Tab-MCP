@@ -25,7 +25,7 @@ from tab_constants import (
     get_instrument_config
 )
 from tab_models import (
-    TabRequest, SongPart, Measure, process_song_structure
+    TabRequest, TabResponse, SongPart, Measure, process_song_structure, ProcessingError
 )
 
 from notation_events import (
@@ -491,7 +491,7 @@ def place_annotation_text(
             char_array[target_pos] = char
 
 
-def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]:
+def generate_tab_output(request: TabRequest) -> TabResponse:
     """
     Generate tab using parts format with section headers.
 
@@ -510,6 +510,13 @@ def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]
         Tuple of (tab_string, warnings_list)
     """
     logger.info(f"Generating parts-based tab for '{request.title}'")
+
+    # This will be the response object
+    response: TabResponse = TabResponse(
+            success = True,
+            content = "",
+            error = None
+        )
 
     warnings = []
     output_lines = []
@@ -531,7 +538,14 @@ def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]
         logger.info(f"Generated {len(instances)} part instances")
     except Exception as e:
         logger.error(f"Failed to process song structure: {e}")
-        return f"Error processing song structure: {e}", [{"error": str(e)}]
+
+        response.success = False
+        response.content = f"Error processing song structure: {e}"
+        response.error = ProcessingError(
+            message = f"Error processing song structure: {e}",
+            suggestion = ""
+        )
+        return response
 
     # Get instrument configuration for string count
     instrument_str = request.instrument
@@ -585,7 +599,10 @@ def generate_tab_output(request: TabRequest) -> Tuple[str, List[Dict[str, Any]]]
         output_lines.append("")  # Extra space between parts
 
     logger.info(f"Generated parts-based tab with {len(warnings)} warnings")
-    return "\n".join(output_lines), warnings
+
+    response.content = "\n".join(output_lines)
+    response.warnings = warnings
+    return response
 
 
 # ============================================================================
@@ -702,26 +719,15 @@ def replace_chars_at_position(line: str, position: int, replacement: str) -> str
 # Error Handling Utilities
 # ============================================================================
 
-def check_attempt_limit(attempt: int) -> Optional[Dict[str, Any]]:
+def check_attempt_limit(attempt: int) -> ProcessingError:
     """ attempt limit checking with parts-specific guidance."""
     MAX_ATTEMPTS = 5
 
     if attempt > MAX_ATTEMPTS:
-        return {
-            "isError": True,
-            "errorType": "attempt_limit_error",
-            "attempt": attempt,
-            "message": f"Maximum regeneration attempts reached ({attempt})",
-            "suggestion": "Consider simplifying the song structure or breaking into smaller sections.",
-            "details": {
-                "possibleCauses": [
-                    "Complex song structure with many parts",
-                    "Invalid part references in structure",
-                    "Complex strum patterns",
-                    "Conflicting emphasis markings"
-                ]
-            }
-        }
+        return ProcessingError(
+            message = f"Maximum regeneration attempts reached ({attempt})",
+            suggestion = "Consider simplifying the song structure or breaking into smaller sections.",
+        )
 
     return None
 

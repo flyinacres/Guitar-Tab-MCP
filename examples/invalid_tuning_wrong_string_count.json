@@ -2,7 +2,7 @@
   "invalid_tuning_wrong_string_count": {
     "title": "Invalid Tuning Test",
     "shouldFail": true,
-    "expectedError": "Validation failed: guitar requires 6 strings, got 3",
+    "expectedError": "guitar requires 6 strings, got 3",
     "instrument": "guitar",
     "timeSignature": "4/4",
     "tuning": [

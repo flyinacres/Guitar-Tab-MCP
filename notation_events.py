@@ -14,7 +14,7 @@ import logging
 from typing import Dict, ClassVar, Type, List, Any, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator, ValidationError
 from time_signatures import ( get_time_signature_config, get_strum_positions_for_time_signature, calculate_char_position )
-from tab_models import TabRequest
+from tab_models import TabRequest, TabError, TabFormatError, ConflictError
 
 # Import our constants
 from tab_constants import (
@@ -32,14 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Clean up the validation errors from pydantic
-def clean_str(self):
-    return "\n".join(
-        f"{' -> '.join(map(str, err['loc']))}: {err['msg']}"
-        for err in self.errors()
-    )
 
-ValidationError.__str__ = clean_str
 
 # ============================================================================
 # Base Event Models
@@ -458,7 +451,7 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                     else:
                         logger.warning(f"Character position {char_position} exceeds total width {total_width}")
     @classmethod
-    def validate_strum_patterns(cls, request: TabRequest) -> Dict[str, Any]:
+    def validate_strum_patterns(cls, request: TabRequest) -> TabError:
         """
         Validate strum pattern events for proper time signature compatibility in parts-based schema.
 
@@ -493,27 +486,23 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                     expected_length = expected_positions * measures_spanned
                     if len(pattern) != expected_length:
                         logger.error(f"Strum pattern length mismatch in part '{part.name}': got {len(pattern)}, expected {expected_length}")
-                        return {
-                            "isError": True,
-                            "errorType": "validation_error",
-                            "part": part.name,
-                            "measure": measure_idx,
-                            "message": f"Strum pattern in part '{part.name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
-                            "suggestion": f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
-                        }
+                        return TabFormatError(
+                            part = part.name,
+                            measure = measure_idx,
+                            message = f"Strum pattern in part '{part.name}' has {len(pattern)} positions, expected {expected_length} for {measures_spanned} measures of {time_sig}",
+                            suggestion = f"Pattern should have {expected_length} elements for {measures_spanned} measures of {time_sig}. Each measure needs {expected_positions} positions."
+                        )
 
                     # Validate pattern values
                     for i, direction in enumerate(pattern):
                         if direction not in ["D", "U", ""]:
                             logger.error(f"Invalid strum direction '{direction}' at position {i} in part '{part.name}'")
-                            return {
-                                "isError": True,
-                                "errorType": "validation_error",
-                                "part": part.name,
-                                "measure": measure_idx,
-                                "message": f"Invalid strum direction '{direction}' at position {i} in part '{part.name}'",
-                                "suggestion": "Use 'D' for down, 'U' for up, or '' for no strum"
-                            }
+                            return TabFormatError(
+                                part = part.name,
+                                measure = measure_idx,
+                                message = f"Invalid strum direction '{direction}' at position {i} in part '{part.name}'",
+                                suggestion = "Use 'D' for down, 'U' for up, or '' for no strum"
+                            )
 
                     # Check for pattern overlaps within this part
                     pattern_info = {
@@ -526,20 +515,18 @@ class StrumPattern(NotationEvent, type="strumPattern"):
                         if (pattern_info["start_measure"] <= existing_pattern["end_measure"] and
                             pattern_info["end_measure"] >= existing_pattern["start_measure"]):
                             logger.error(f"Overlapping strum patterns detected in part '{part.name}'")
-                            return {
-                                "isError": True,
-                                "errorType": "conflict_error",
-                                "part": part.name,
-                                "measure": measure_idx,
-                                "message": f"Overlapping strum patterns detected in part '{part.name}'",
-                                "suggestion": "Only one strum pattern can be active at a time within a part"
-                            }
+                            return ConflictError(
+                                part = part.name,
+                                measure = measure_idx,
+                                message = f"Overlapping strum patterns detected in part '{part.name}'",
+                                suggestion = "Only one strum pattern can be active at a time within a part"
+                            )
 
                     active_patterns.append(pattern_info)
                     logger.debug(f"Strum pattern validated in part '{part.name}': {measures_spanned} measures, {len(pattern)} positions")
 
         logger.debug("Strum pattern validation passed")
-        return {"isError": False}
+        return None
 
 class GraceNote(MusicalEvent, type="graceNote"):
     """Grace note - small note played quickly before main note."""
@@ -591,7 +578,7 @@ class GraceNote(MusicalEvent, type="graceNote"):
         return f"{sscript_grace}{self.fret}"
     
     @classmethod
-    def validate_grace_note_conflicts(cls, grace_notes: List[Dict], events_by_position: Dict, part_name: str, measure: int) -> Dict[str, Any]:
+    def validate_grace_note_conflicts(cls, grace_notes: List[Dict], events_by_position: Dict, part_name: str, measure: int) -> TabError:
         """
         Check for conflicts between grace notes and main notes in parts-based schema.
         """
@@ -603,20 +590,18 @@ class GraceNote(MusicalEvent, type="graceNote"):
             # Check if there's a main note at the same position
             position_key = f"{string_num}_{beat}"
             if position_key not in events_by_position:
-                return {
-                    "isError": True,
-                    "errorType": "validation_error",
-                    "part": part_name,
-                    "measure": measure,
-                    "beat": beat,
-                    "message": f"Grace note in part '{part_name}' on string {string_num} has no target note at beat {beat}",
-                    "suggestion": "Grace notes must lead into a main note at the same beat and string"
-                }
+                return TabFormatError(
+                    part = part_name,
+                    measure = measure,
+                    beat = beat,
+                    message = f"Grace note in part '{part_name}' on string {string_num} has no target note at beat {beat}",
+                    suggestion = "Grace notes must lead into a main note at the same beat and string"
+                )
 
-        return {"isError": False}
+        return None
     
     @classmethod
-    def validate_grace_note_timing(cls, beat: float, time_sig: str, part_name: str, measure: int) -> Dict[str, Any]:
+    def validate_grace_note_timing(cls, beat: float, time_sig: str, part_name: str, measure: int) -> TabError:
         """
         Validate grace note timing for parts-based schema.
         """
@@ -625,17 +610,15 @@ class GraceNote(MusicalEvent, type="graceNote"):
 
         # Grace notes should not be at the very end of a measure
         if beat >= max_beat:
-            return {
-                "isError": True,
-                "errorType": "validation_error",
-                "part": part_name,
-                "measure": measure,
-                "beat": beat,
-                "message": f"Grace note in part '{part_name}' has invalid timing at beat {beat}",
-                "suggestion": f"Grace notes should be placed before beat {max_beat}"
-            }
+            return TabFormatError(
+                part = part_name,
+                measure = measure,
+                beat = beat,
+                message = f"Grace note in part '{part_name}' has invalid timing at beat {beat}",
+                suggestion = f"Grace notes should be placed before beat {max_beat}"
+            )
 
-        return {"isError": False}
+        return None
 
 class Dynamic(NotationEvent, type="dynamic"):
     """Standalone dynamic marking that affects following notes/chords."""
