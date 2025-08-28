@@ -202,9 +202,8 @@ class TabTestFramework:
 
 def get_test_suite(test_file: Path) -> Dict[str, Dict[str, Any]]:
     """Load test suite from JSON file."""
-    print(f"Using test file '{test_file}'")
 
-    test_file_path = Path(__file__).parent / test_file
+    test_file_path = Path(__file__).parent.parent / test_file
     
     if not test_file_path.exists():
         raise FileNotFoundError(f"Test file not found: {test_file_path}")
@@ -228,7 +227,9 @@ def get_smoke_tests(test_file: Path) -> Dict[str, Dict[str, Any]]:
 
 def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool = False, verbose: bool = False, show: bool = False) -> bool:
     """Run the complete test suite."""
-    project_root = Path(__file__).parent
+    # Since code is in <project>/src, I want the parent to be up another level
+    project_root = Path(__file__).parent.parent
+    print(f"The parent.parent is {project_root}")
     framework = TabTestFramework(project_root)
     
     # Select test suite
@@ -260,7 +261,7 @@ def run_all_tests(test_file: str, update_golden: bool = False, smoke_only: bool 
 
 def create_json_files(test_file):
     """Create example JSON files for manual testing."""
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).parent.parent
     examples_dir = project_root / "examples"
     examples_dir.mkdir(exist_ok=True)
     

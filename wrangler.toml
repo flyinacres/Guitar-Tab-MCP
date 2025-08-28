@@ -1,0 +1,7 @@
+name = "tab-generator"
+main = "src/main.py"
+compatibility_date = "2024-08-27"
+compatibility_flags = ["python_workers"]
+
+[vars]
+DEBUG = "false"
