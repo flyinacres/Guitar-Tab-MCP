@@ -29,7 +29,7 @@ async def on_fetch(request: Request) -> Response:
             request_data = json.loads(body)
             
             tool = request_data.get("tool")
-            psync def on_fetch(request: Request) -> Response:arams = request_data.get("params", {})
+            params = request_data.get("params", {})
             
             if tool == "generate_tab":
                 result = generate_tab(params.get("tab_data", ""))
