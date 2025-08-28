@@ -24,8 +24,10 @@ For Claude Desktop integration, add to config:
 """
 
 import sys
+import os
 import logging
 import json
+import fastmcp
 from typing import Dict, Any
 from fastmcp import FastMCP
 
@@ -717,22 +719,28 @@ def get_json_schema() -> Dict[str, Any]:
 # ============================================================================
 
 def main():
-    """
-    Start the MCP server.
+    """Start the MCP server in appropriate mode based on environment."""
+    
+    # Detect if running in production (common environment variables)
+    is_production = any([
+        os.getenv('RENDER'),           # Render
+        os.getenv('PORT'),             # Most cloud platforms
+    ])
+    
+    # Check if stdio is available (local testing)
+    has_stdio = sys.stdin.isatty() and sys.stdout.isatty()
+    
+    if is_production or not has_stdio:
+        # For hosting on Render, use these values
+        port = int(os.environ.get("PORT", 8001))
 
-    This runs the FastMCP server in stdio mode for integration with
-    Claude Desktop and other MCP clients, with full support for
-    tab features.
-    """
-    logger.info("Starting Tab Generator MCP Server")
-
-    try:
+        # Production: use SSE mode
+        logger.info("Starting MCP server in SSE mode")
+        mcp.run(transport='sse', host="0.0.0.0", port=port)
+    else:
+        # Local: use stdio mode  
+        logger.info("Starting MCP server in stdio mode")
         mcp.run()
-    except KeyboardInterrupt:
-        logger.info(" MCP server stopped by user")
-    except Exception as e:
-        logger.error(f" MCP server error: {e}")
-        raise
 
 if __name__ == "__main__":
     main()
