@@ -52,32 +52,32 @@ INSTRUMENT_CONFIGS = {
     Instrument.GUITAR: InstrumentConfig(
         name="guitar",
         strings=6,
-        tuning=["E", "A", "D", "G", "B", "E"]
+        tuning=["e", "B", "G", "D", "A", "E"]
     ),
     Instrument.UKULELE: InstrumentConfig(
         name="ukulele",
         strings=4, 
-        tuning=["G", "C", "E", "A"]
+        tuning=["A", "E", "C", "G"]
     ),
         Instrument.BASS: InstrumentConfig(
         name="bass",
         strings=4,
-        tuning=["E", "A", "D", "G"]  # Standard bass tuning
+        tuning=["G", "D", "A", "E"]  # Standard bass tuning
     ),
     Instrument.MANDOLIN: InstrumentConfig(
         name="mandolin", 
         strings=4,  # 4 courses, but 8 strings  Strings are what we specify in tabs
-        tuning=["G", "D", "A", "E"]
+        tuning=["E", "A", "D", "G"]
     ),
     Instrument.BANJO: InstrumentConfig(
         name="banjo",
         strings=5,
-        tuning=["D", "G", "B", "D", "g"]  # Open G tuning
+        tuning=["g", "D", "B", "G", "D"]  # Open G tuning
     ),
     Instrument.SEVEN_STRING: InstrumentConfig(
         name="seven string",
         strings=7,
-        tuning=["B", "E", "A", "D", "G", "b", "e"]
+        tuning=["e", "b", "G", "D", "A", "E", "B"]
     )
     }
 

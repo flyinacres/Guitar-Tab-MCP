@@ -129,8 +129,8 @@ def generate_tab(tab_data: str) -> TabResponse:
     ## Supported Instruments
 
     ### Guitar (6-string)
-    - Standard tuning: E-A-D-G-B-E
-    - String numbering: 1 (high E) to 6 (low E)
+    - Standard tuning: E-A-D-G-B-e
+    - String numbering: 1 (high e) to 6 (low E)
     - Custom tunings supported
 
     ### Ukulele (4-string)
@@ -335,7 +335,7 @@ def generate_tab(tab_data: str) -> TabResponse:
     ```json
     {
       "instrument": "guitar",
-      "tuning": ["D", "A", "D", "G", "B", "E"],
+      "tuning": ["D", "A", "D", "G", "B", "e"],
       "tuning_name": "Drop D",
       "parts": {...}
     }
@@ -364,7 +364,7 @@ def generate_tab(tab_data: str) -> TabResponse:
      G                 Em
      mf
       1 & 2 & 3 & 4 &   1 & 2 & 3 & 4 &
-    E |-3---------------|-0---------------|
+    e |-3---------------|-0---------------|
     B |-0---------------|-0---------------|
     G |-0---------------|-0---------------|
     D |-0---------------|-2---------------|
