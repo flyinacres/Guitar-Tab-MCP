@@ -128,6 +128,9 @@ def generate_tab(tab_data: str) -> TabResponse:
 
     ## Supported Instruments
 
+    # Tuning arrays are ordered high-to-low (string 1 first) to match
+    # standard tab display where the highest string appears at the top.
+
     ### Guitar (6-string)
     - Standard tuning: E-A-D-G-B-e
     - String numbering: 1 (high e) to 6 (low E)
